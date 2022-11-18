@@ -1,0 +1,1150 @@
+{
+    "openapi": "3.0.2",
+    "info": {
+        "title": "Uber API",
+        "description": "Uber Mock Api Specification",
+        "version": "1.0"
+    },
+    "servers": [
+        {
+            "url": "https://api.uber.com/v1.2"
+        }
+    ],
+    "paths": {
+        "/products": {
+            "get": {
+                "summary": "Product Types",
+                "description": "The Products endpoint returns information about the Uber products offered at a given location. The response includes the display name and other details about each product, and lists the products in the proper display order.",
+                "parameters": [
+                    {
+                        "name": "latitude",
+                        "in": "query",
+                        "description": "Latitude component of location.",
+                        "required": true,
+                        "schema": {
+                            "type": "number",
+                            "format": "double"
+                        }
+                    },
+                    {
+                        "name": "longitude",
+                        "in": "query",
+                        "description": "Longitude component of location.",
+                        "required": true,
+                        "schema": {
+                            "type": "number",
+                            "format": "double"
+                        }
+                    }
+                ],
+                "security": [
+                    {
+                        "apikey": []
+                    }
+                ],
+                "tags": [
+                    "Products"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "An array of products",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProductList"
+                                }
+                            }
+                        }
+                    },
+                    "default": {
+                        "description": "Unexpected error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/products/{product_id}": {
+            "get": {
+                "summary": "Product Types",
+                "description": "The Products endpoint returns information about the Uber products offered at a given location. The response includes the display name and other details about each product, and lists the products in the proper display order.",
+                "parameters": [
+                    {
+                        "name": "product_id",
+                        "in": "path",
+                        "description": "Unique identifier representing a specific product for a given latitude & longitude. For example, uberX in San Francisco will have a different product_id than uberX in Los Angeles.",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "security": [
+                    {
+                        "apikey": []
+                    }
+                ],
+                "tags": [
+                    "Products"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "An array of products",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProductList"
+                                }
+                            }
+                        }
+                    },
+                    "default": {
+                        "description": "Unexpected error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/estimates/price": {
+            "get": {
+                "summary": "Price Estimates",
+                "description": "The Price Estimates endpoint returns an estimated price range for each product offered at a given location. The price estimate is provided as a formatted string with the full price range and the localized currency symbol.<br><br>The response also includes low and high estimates, and the [ISO 4217](http://en.wikipedia.org/wiki/ISO_4217) currency code for situations requiring currency conversion. When surge is active for a particular product, its surge_multiplier will be greater than 1, but the price estimate already factors in this multiplier.",
+                "parameters": [
+                    {
+                        "name": "start_latitude",
+                        "in": "query",
+                        "description": "Latitude component of start location.",
+                        "required": true,
+                        "schema": {
+                            "type": "number",
+                            "format": "double"
+                        }
+                    },
+                    {
+                        "name": "start_longitude",
+                        "in": "query",
+                        "description": "Longitude component of start location.",
+                        "required": true,
+                        "schema": {
+                            "type": "number",
+                            "format": "double"
+                        }
+                    },
+                    {
+                        "name": "end_latitude",
+                        "in": "query",
+                        "description": "Latitude component of end location.",
+                        "required": true,
+                        "schema": {
+                            "type": "number",
+                            "format": "double"
+                        }
+                    },
+                    {
+                        "name": "end_longitude",
+                        "in": "query",
+                        "description": "Longitude component of end location.",
+                        "required": true,
+                        "schema": {
+                            "type": "number",
+                            "format": "double"
+                        }
+                    }
+                ],
+                "tags": [
+                    "Estimates"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "An array of price estimates by product",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/PriceEstimate"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "default": {
+                        "description": "Unexpected error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/estimates/time": {
+            "get": {
+                "summary": "Time Estimates",
+                "description": "The Time Estimates endpoint returns ETAs for all products offered at a given location, with the responses expressed as integers in seconds. We recommend that this endpoint be called every minute to provide the most accurate, up-to-date ETAs.",
+                "parameters": [
+                    {
+                        "name": "start_latitude",
+                        "in": "query",
+                        "description": "Latitude component of start location.",
+                        "required": true,
+                        "schema": {
+                            "type": "number",
+                            "format": "double"
+                        }
+                    },
+                    {
+                        "name": "start_longitude",
+                        "in": "query",
+                        "description": "Longitude component of start location.",
+                        "required": true,
+                        "schema": {
+                            "type": "number",
+                            "format": "double"
+                        }
+                    },
+                    {
+                        "name": "product_id",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "Unique identifier representing a specific product for a given latitude & longitude."
+                    }
+                ],
+                "tags": [
+                    "Estimates"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "An array of products",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/TimeEstimate"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "default": {
+                        "description": "Unexpected error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/me": {
+            "get": {
+                "summary": "User Profile",
+                "description": "The User Profile endpoint returns information about the Uber user that has authorized with the application.",
+                "tags": [
+                    "User"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Profile information for a user",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Profile"
+                                }
+                            }
+                        }
+                    },
+                    "default": {
+                        "description": "Unexpected error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/history": {
+            "get": {
+                "summary": "User Activity",
+                "description": "The User Activity endpoint returns data about a user's lifetime activity with Uber. The response will include pickup locations and times, dropoff locations and times, the distance of past requests, and information about which products were requested.<br><br>The history array in the response will have a maximum length based on the limit parameter. The response value count may exceed limit, therefore subsequent API requests may be necessary.",
+                "parameters": [
+                    {
+                        "name": "offset",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "format": "int32"
+                        },
+                        "description": "Offset the list of returned results by this amount. Default is zero."
+                    },
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "format": "int32"
+                        },
+                        "description": "Number of items to retrieve. Default is 5, maximum is 100."
+                    }
+                ],
+                "tags": [
+                    "User"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "History information for the given user",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Activities"
+                                }
+                            }
+                        }
+                    },
+                    "default": {
+                        "description": "Unexpected error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/payment": {
+            "get": {
+                "summary": "Payment Method",
+                "description": "The Payment Methods endpoint allows retrieving the list of the user’s available payment methods. These can be leveraged in order to supply a payment_method_id to the POST /requests endpoint.",
+                "parameters": [
+                    {
+                        "name": "start_latitude",
+                        "in": "query",
+                        "description": "Latitude component of start location.",
+                        "required": true,
+                        "schema": {
+                            "type": "number",
+                            "format": "double"
+                        }
+                    },
+                    {
+                        "name": "start_longitude",
+                        "in": "query",
+                        "description": "Longitude component of start location.",
+                        "required": true,
+                        "schema": {
+                            "type": "number",
+                            "format": "double"
+                        }
+                    },
+                    {
+                        "name": "end_latitude",
+                        "in": "query",
+                        "description": "Latitude component of end location.",
+                        "required": true,
+                        "schema": {
+                            "type": "number",
+                            "format": "double"
+                        }
+                    },
+                    {
+                        "name": "end_longitude",
+                        "in": "query",
+                        "description": "Longitude component of end location.",
+                        "required": true,
+                        "schema": {
+                            "type": "number",
+                            "format": "double"
+                        }
+                    }
+                ],
+                "tags": [
+                    "User"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Profile information for a user",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Payment"
+                                }
+                            }
+                        }
+                    },
+                    "default": {
+                        "description": "Unexpected error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/request": {
+            "post": {
+                "summary": "Create Requests",
+                "description": "The Ride Request endpoint allows a ride to be requested on behalf of an Uber user.",
+                "tags": [
+                    "Requests"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/Requests"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "202": {
+                        "description": "Accepted"
+                    },
+                    "400": {
+                        "description": "Bad Request"
+                    },
+                    "403": {
+                        "description": "Missing Information or Product Not Found"
+                    },
+                    "409": {
+                        "description": "Missing Payment Method, Surge, Fare Expired, or Retry Request"
+                    },
+                    "422": {
+                        "description": "Invalid Fare Id, Validation Failed, Same Pick Up Dropoff, Destination Required, or Outside Service Area"
+                    },
+                    "500": {
+                        "description": "Internal Server Error"
+                    }
+                }
+            }
+        },
+        "/request/{request_id}": {
+            "get": {
+                "summary": "Details on Ongoing Request",
+                "description": "The Ride Request endpoint allows retrieving the status of an ongoing or completed trip that was created by your app.\nBy default, only details about trips your app requested will be accessible. If your app has all_trips scope, however, trip details will be returned for all trips irrespective of which application initiated them.",
+                "parameters": [
+                    {
+                        "name": "request_id",
+                        "in": "path",
+                        "description": "Unique identifier representing a Request.",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "tags": [
+                    "Requests"
+                ],
+                "responses": {
+                    "202": {
+                        "description": "Ongoing Trip Information for a user",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/request_id"
+                                }
+                            }
+                        }
+                    },
+                    "default": {
+                        "description": "Unexpected error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Error"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "summary": "Update Requests",
+                "description": "The Ride Request endpoint allows updating an ongoing request’s destination using the Ride Request endpoint.",
+                "tags": [
+                    "Requests"
+                ],
+                "parameters": [
+                    {
+                        "name": "request_id",
+                        "in": "path",
+                        "description": "Unique identifier representing a Request.",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "401": {
+                        "description": "Invalid OAuth 2.0 credentials provided."
+                    },
+                    "404": {
+                        "description": "The provided request ID doesn’t exist."
+                    },
+                    "422": {
+                        "description": "The input failed invalidation. This may happen if any of the input fields failed validation. For example, latitude and longitude fields need to be updated at the same time."
+                    }
+                }
+            },
+            "delete": {
+                "summary": "Delete Requests",
+                "description": "The Ride Request endpoint allows cancellation of an ongoing Request on behalf of a rider.",
+                "tags": [
+                    "Requests"
+                ],
+                "parameters": [
+                    {
+                        "name": "request_id",
+                        "in": "path",
+                        "description": "Unique identifier representing a Request.",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    }
+                }
+            }
+        },
+        "/requests/{request_id}/map": {
+            "get": {
+                "summary": "Generate Map",
+                "description": "The Ride Request endpoint getting a map with a visual representation of a Request.",
+                "tags": [
+                    "Requests"
+                ],
+                "parameters": [
+                    {
+                        "name": "request_id",
+                        "in": "path",
+                        "description": "Unique identifier representing a Request.",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Ongoing Trip Information for a user",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/mapObj"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/requests/{request_id}/receipt": {
+            "get": {
+                "summary": "Give Receipt",
+                "description": "The Ride Request endpoint allows getting the receipt information of the completed request. There may be a delay from when the trip ends and when the receipt is ready. The receipt is only available after the requests.receipt_ready webhook notification is sent. The trip receipt may be adjusted after the requests.receipt_ready webhook is sent as finalized receipts can be delayed.",
+                "tags": [
+                    "Requests"
+                ],
+                "parameters": [
+                    {
+                        "name": "request_id",
+                        "in": "path",
+                        "description": "Unique identifier representing a Request.",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Receipt information for user",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/receipt"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "components": {
+        "securitySchemes": {
+            "apikey": {
+                "type": "apiKey",
+                "name": "server_token",
+                "in": "query"
+            }
+        },
+        "schemas": {
+            "ProductList": {
+                "properties": {
+                    "products": {
+                        "description": "Contains the list of products",
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Product"
+                        }
+                    }
+                }
+            },
+            "Product": {
+                "properties": {
+                    "upfront_fare_enabled": {
+                        "type": "boolean"
+                    },
+                    "capacity": {
+                        "type": "integer",
+                        "description": "Capacity of product. For example, 4 people."
+                    },
+                    "product_id": {
+                        "type": "string",
+                        "description": "Unique identifier representing a specific product for a given latitude & longitude. For example, uberX in San Francisco will have a different product_id than uberX in Los Angeles."
+                    },
+                    "price_details": {
+                        "properties": {
+                            "cost_per_minute": {
+                                "type": "number",
+                                "format": "float",
+                                "description": "The charge per minute (if applicable for the product type)"
+                            },
+                            "distance_unit": {
+                                "type": "string",
+                                "description": "The unit of distance used to calculate the fare (either mile or km)"
+                            },
+                            "minimum": {
+                                "type": "number",
+                                "format": "float",
+                                "description": "The minimum price of a trip"
+                            },
+                            "cost_per_distance": {
+                                "type": "number",
+                                "format": "float",
+                                "description": "The charge per distance unit (if applicable for the product type)"
+                            },
+                            "base": {
+                                "type": "number",
+                                "format": "float",
+                                "description": "The base price"
+                            },
+                            "canellation_fee": {
+                                "type": "number",
+                                "format": "float",
+                                "description": "The fee if a rider cancels the trip after the grace period"
+                            },
+                            "currency_code": {
+                                "type": "string",
+                                "description": "ISO 4217 currency code"
+                            }
+                        }
+                    },
+                    "image": {
+                        "type": "string",
+                        "description": "Image URL representing the product."
+                    },
+                    "cash_enabled": {
+                        "type": "boolean",
+                        "description": "Specifies whether this product allows cash payments"
+                    },
+                    "shared": {
+                        "type": "boolean",
+                        "description": "Specifies whether this product allows for the pickup and drop off of other riders during the trip"
+                    },
+                    "short_description": {
+                        "type": "string",
+                        "description": "An abbreviated description of the product. Localized according to Accept-Language header."
+                    },
+                    "display_name": {
+                        "type": "string",
+                        "description": "Display name of product."
+                    },
+                    "product_group": {
+                        "type": "string",
+                        "description": "The product group that this product belongs to. One of rideshare,uberx,uberxl,uberblack, suv, or taxi."
+                    },
+                    "description": {
+                        "type": "string",
+                        "description": "Description of product."
+                    }
+                }
+            },
+            "PriceEstimate": {
+                "properties": {
+                    "localized_display_name": {
+                        "type": "string",
+                        "description": "Localized display name of product."
+                    },
+                    "distance": {
+                        "type": "number",
+                        "format": "float",
+                        "description": "Expected activity distance (in miles)."
+                    },
+                    "display_name": {
+                        "type": "string",
+                        "description": "Display name of product."
+                    },
+                    "product_id": {
+                        "type": "string",
+                        "description": "Unique identifier representing a specific product for a given latitude & longitude. For example, uberX in San Francisco will have a different product_id than uberX in Los Angeles"
+                    },
+                    "high_estimate": {
+                        "type": "number",
+                        "description": "Upper bound of the estimated price."
+                    },
+                    "low_estimate": {
+                        "type": "number",
+                        "description": "Lower bound of the estimated price."
+                    },
+                    "duration": {
+                        "type": "integer",
+                        "description": "Expected activity duration (in seconds). Always show duration in minutes."
+                    },
+                    "estimate": {
+                        "type": "string",
+                        "description": "Formatted string of estimate in local currency of the start location. Estimate could be a range, a single number (flat rate) or \"Metered\" for TAXI."
+                    },
+                    "surge_multiplier": {
+                        "type": "number",
+                        "description": "Expected surge multiplier. Surge is active if surge_multiplier is greater than 1. Price estimate already factors in the surge multiplier."
+                    },
+                    "currency_code": {
+                        "type": "string",
+                        "description": "[ISO 4217](http://en.wikipedia.org/wiki/ISO_4217) currency code."
+                    }
+                }
+            },
+            "TimeEstimate": {
+                "properties": {
+                    "localized_display_name": {
+                        "type": "string",
+                        "description": "Localized display name of product."
+                    },
+                    "estimate": {
+                        "type": "integer",
+                        "description": "ETA for the product (in seconds). Always show estimate in minutes."
+                    },
+                    "display_name": {
+                        "type": "string",
+                        "description": "Display name of product"
+                    },
+                    "product_id": {
+                        "type": "string",
+                        "description": "Unique identifier representing a specific product for a given latitude & longitude. For example, uberX in San Francisco will have a different product_id than uberX in Los Angeles."
+                    }
+                }
+            },
+            "Profile": {
+                "properties": {
+                    "picture": {
+                        "type": "string",
+                        "description": "Image URL of the Uber user."
+                    },
+                    "first_name": {
+                        "type": "string",
+                        "description": "First name of the Uber user."
+                    },
+                    "last_name": {
+                        "type": "string",
+                        "description": "Last name of the Uber user."
+                    },
+                    "uuid": {
+                        "type": "string",
+                        "description": "Unique identifier of the Uber user."
+                    },
+                    "rider_id": {
+                        "type": "string",
+                        "description": "Encrypted unique identifier of the Uber rider."
+                    },
+                    "email": {
+                        "type": "string",
+                        "description": "Email address of the Uber user"
+                    },
+                    "mobile_verified": {
+                        "type": "boolean",
+                        "description": "Whether the user has confirmed their mobile number."
+                    },
+                    "promo_code": {
+                        "type": "string",
+                        "description": "Promo code of the Uber user."
+                    }
+                }
+            },
+            "Activities": {
+                "properties": {
+                    "count": {
+                        "type": "integer",
+                        "description": "Total number of items available."
+                    },
+                    "history": {
+                        "properties": {
+                            "status": {
+                                "type": "string",
+                                "description": "Status of the activity. Only returns completed for now."
+                            },
+                            "distance": {
+                                "type": "number",
+                                "format": "float",
+                                "description": "Length of activity in miles."
+                            },
+                            "product_id": {
+                                "type": "string",
+                                "description": "Unique identifier representing a specific product for a given latitude & longitude. For example, uberX in San Francisco will have a different product_id than uberX in Los Angeles."
+                            },
+                            "start_time": {
+                                "type": "integer",
+                                "description": "Unix timestamp of activity start time."
+                            },
+                            "start_city": {
+                                "properties": {
+                                    "latitude": {
+                                        "type": "number",
+                                        "format": "float",
+                                        "description": "The latitude of the approximate city center."
+                                    },
+                                    "display_name": {
+                                        "type": "string",
+                                        "description": "The name of the city."
+                                    },
+                                    "longitude": {
+                                        "type": "number",
+                                        "format": "float",
+                                        "description": "The longitude of the approximate city center"
+                                    }
+                                }
+                            },
+                            "end_time": {
+                                "type": "object",
+                                "description": "Unix timestamp of activity end time."
+                            },
+                            "request_id": {
+                                "type": "string",
+                                "description": "Unique activity identifier."
+                            },
+                            "request_time": {
+                                "type": "integer"
+                            }
+                        }
+                    },
+                    "limit": {
+                        "type": "integer",
+                        "description": "Number of items to retrieve (50 max)."
+                    },
+                    "offset": {
+                        "type": "integer",
+                        "description": "Position in pagination."
+                    }
+                }
+            },
+            "Payment": {
+                "properties": {
+                    "payment_methods": {
+                        "type": "array",
+                        "description": "An array of this user’s payment methods",
+                        "items": {
+                            "$ref": "#/components/schemas/Payment_Method"
+                        }
+                    },
+                    "last_used": {
+                        "type": "string",
+                        "description": "The unique identifier of the last used payment method."
+                    }
+                }
+            },
+            "Payment_Method": {
+                "properties": {
+                    "payment_method_id": {
+                        "type": "string",
+                        "description": "Unique identifier of the payment method."
+                    },
+                    "type": {
+                        "type": "string",
+                        "description": "The type of the payment method (See below for details)."
+                    },
+                    "description": {
+                        "type": "string",
+                        "description": "The account identification or description associated with the payment method."
+                    }
+                }
+            },
+            "Requests": {
+                "type": "object",
+                "properties": {
+                    "fare_id": {
+                        "type": "string",
+                        "description": "The key for the upfront fare of a ride."
+                    },
+                    "product_id": {
+                        "type": "string",
+                        "description": "The unique ID of the product being requested."
+                    },
+                    "start_latitude": {
+                        "type": "number",
+                        "format": "float",
+                        "description": "The beginning or “pickup” latitude. Either this or start_place_id must be specified."
+                    },
+                    "end_latitude": {
+                        "type": "number",
+                        "format": "float",
+                        "description": "The final or destination latitude. Either this or end_place_id may be specified."
+                    },
+                    "start_longitude": {
+                        "type": "number",
+                        "format": "float",
+                        "description": "The beginning or “pickup” longitude. Either this or start_place_id must be specified."
+                    },
+                    "end_longitude": {
+                        "type": "number",
+                        "format": "float",
+                        "description": "The final or destination longitude. Either this or end_place_id may be specified./td>"
+                    }
+                },
+                "required": [
+                    "fare_id",
+                    "start_latitude",
+                    "end_latitude",
+                    "start_longitude",
+                    "end_longitude"
+                ]
+            },
+            "request_id": {
+                "properties": {
+                    "product_id": {
+                        "type": "string"
+                    },
+                    "request_id": {
+                        "type": "string"
+                    },
+                    "status": {
+                        "type": "string"
+                    },
+                    "surge_multiplier": {
+                        "type": "number",
+                        "format": "float"
+                    },
+                    "shared": {
+                        "type": "boolean"
+                    },
+                    "drivers": {
+                        "properties": {
+                            "phone_number": {
+                                "type": "string"
+                            },
+                            "sms_number": {
+                                "type": "string"
+                            },
+                            "rating": {
+                                "type": "number",
+                                "format": "float"
+                            },
+                            "picture_url": {
+                                "type": "string"
+                            },
+                            "name": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "vehicle": {
+                        "properties": {
+                            "make": {
+                                "type": "string"
+                            },
+                            "model": {
+                                "type": "string"
+                            },
+                            "license_plate": {
+                                "type": "string"
+                            },
+                            "picture_url": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "location": {
+                        "properties": {
+                            "latitude": {
+                                "type": "number",
+                                "format": "float"
+                            },
+                            "longitude": {
+                                "type": "number",
+                                "format": "float"
+                            },
+                            "bearing": {
+                                "type": "integer"
+                            }
+                        }
+                    },
+                    "pickup": {
+                        "items": {
+                            "$ref": "#/components/schemas/trip"
+                        }
+                    },
+                    "destination": {
+                        "$ref": "#/components/schemas/trip"
+                    },
+                    "waypoints": {
+                        "properties": {
+                            "rider_id": {
+                                "type": "string",
+                                "description": "The hashed rider uuid. A value of null means that the rider account associated with the rider_id has not authenticated with your app."
+                            },
+                            "latitude": {
+                                "type": "number",
+                                "format": "float"
+                            },
+                            "type": {
+                                "type": "string",
+                                "description": "The type of the waypoints. e.g., ‘pickup’, ‘dropoff’."
+                            },
+                            "longitude": {
+                                "type": "number",
+                                "format": "float"
+                            }
+                        }
+                    },
+                    "riders": {
+                        "properties": {
+                            "rider_id": {
+                                "type": "string"
+                            },
+                            "first_name": {
+                                "type": "string"
+                            },
+                            "me": {
+                                "type": "boolean",
+                                "description": "If true, this rider is the current authenticated user."
+                            }
+                        }
+                    }
+                }
+            },
+            "trip": {
+                "properties": {
+                    "alias": {
+                        "type": "string"
+                    },
+                    "latitude": {
+                        "type": "number",
+                        "format": "float"
+                    },
+                    "longitude": {
+                        "type": "number",
+                        "format": "float"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "address": {
+                        "type": "string"
+                    },
+                    "eta": {
+                        "type": "number",
+                        "format": "float",
+                        "description": "The estimated time until arrival at the destination. Only non-null during an ongoing trip."
+                    }
+                }
+            },
+            "mapObj": {
+                "type": "object",
+                "properties": {
+                    "request_id": {
+                        "type": "string"
+                    },
+                    "href": {
+                        "type": "string",
+                        "description": "URL to a map representing the requested trip."
+                    }
+                }
+            },
+            "receipt": {
+                "properties": {
+                    "request_id": {
+                        "type": "string"
+                    },
+                    "subtotal": {
+                        "type": "string"
+                    },
+                    "total_charged": {
+                        "type": "string"
+                    },
+                    "total_owed": {
+                        "type": "number",
+                        "format": "float"
+                    },
+                    "total_fare": {
+                        "type": "string"
+                    },
+                    "currency_code": {
+                        "type": "string"
+                    },
+                    "duration": {
+                        "type": "string"
+                    },
+                    "distance": {
+                        "type": "string"
+                    },
+                    "distance_label": {
+                        "type": "string"
+                    }
+                }
+            },
+            "Error": {
+                "properties": {
+                    "fields": {
+                        "type": "string"
+                    },
+                    "message": {
+                        "type": "string"
+                    },
+                    "code": {
+                        "type": "string"
+                    }
+                }
+            }
+        }
+    }
+}
