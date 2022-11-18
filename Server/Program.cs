@@ -1,4 +1,4 @@
-using UberClient.HTTPClient;
+// using UberClient.HTTPClient;
 using UberClient.Services;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -21,7 +21,7 @@ app.UseAuthorization();
 
 app.MapControllers();
 
-HttpClientInstance.InitializeClient();
+// HttpClientInstance.InitializeClient();
 
 app.MapGrpcService<EstimatesService>();
 app.MapGrpcService<RequestsService>();

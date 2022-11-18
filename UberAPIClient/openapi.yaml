@@ -390,6 +390,49 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/receipt"
+  /requests/estimate:
+    post:
+      tags:
+        - Requests
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                product_id:
+                  description: The unique ID of the product being requested. If none is provided, it will default to the cheapest product for the given location.
+                  type: string
+                start_latitude:
+                  description: The beginning or “pickup” latitude. Either this or start_place_id must be specified.
+                  type: number
+                start_longitude:
+                  description: The beginning or “pickup” longitude. Either this or start_place_id must be specified.
+                  type: number
+                start_place_id:
+                  description: The beginning or “pickup” place ID. This is the name of an Uber saved place. Only “home” or “work” is acceptable. Either this or start_latitude and start_longitude must be specified.
+                  type: string
+                end_latitude:
+                  description: The end or “destination” latitude. Either this or end_place_id must be specified.
+                  type: number
+                end_longitude:
+                  description: The end or “destination” longitude. Either this or end_place_id must be specified.
+                  type: number
+                end_place_id:
+                  description: The final or destination place id. This is the name of an Uber saved place. Only “home” or “work” is acceptable. Either this or end_latitude and end_longitude may be specified.
+                  type: string
+                seat_count:
+                  description: The number of seats required for uberPOOL. Default and maximum value is 2.
+                  type: integer
+      responses:
+        '200':
+          description: Receipt information for user
+          content: 
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PriceEstimate"
+
+
 components:
   securitySchemes:
     apikey:

@@ -1,5 +1,5 @@
 ﻿using Grpc.Core;
-
+using InternalAPI;
 
 namespace UberClient.Services
 {
