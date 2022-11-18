@@ -439,6 +439,23 @@ components:
       type: apiKey
       name: server_token
       in: query
+    userToken:
+      type: oauth2
+      description: This API uses OAuth 2 with the implicit grant flow. [More info](https://api.example.com/docs/auth)
+      flows:
+        authorizationCode:
+          authorizationUrl: https://login.uber.com/oauth/v2/authorize
+          tokenUrl: https://login.uber.com/oauth/v2/token
+          refreshUrl: https://login.uber.com/oauth/v2/token
+          scopes:
+            profile: Access the basic profile information on a user's Uber account including their first name, email address, and profile picture.
+            history: Pull trip data including times, product type, and city information of a user's historical pickups and drop-offs.
+            history_lite: Same as history but without city information.
+            offline_access: Provides the ability to refresh tokens for offline use.
+            places: Access to get and update your saved places. This includes your home and work addresses if you have saved them with Uber.
+            request: Make requests for Uber Products on behalf of users.
+            request_receipt: Get receipt details for Requests made by application.
+            all_trips: Access trip details about all future Uber trips. Including pickup, destination, and real-time location for all of your future rides.
   schemas:
     ProductList:
       properties:
