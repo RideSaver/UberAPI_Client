@@ -38,7 +38,7 @@ jobs:
               uses: docker/metadata-action@v4
               with:
                   images: |
-                      ghcr.io/ridesaver/lyftapi
+                      ghcr.io/ridesaver/uberapi
                   tags: |
                       type=schedule,pattern=nightly
                       type=ref,event=branch
