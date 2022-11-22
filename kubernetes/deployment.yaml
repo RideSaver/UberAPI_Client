@@ -1,9 +1,9 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-    name: lyft-client
+    name: uber-client
     type: api-client
-    client: lyft
+    client: uber
 spec:
     selector:
         matchLabels:
@@ -13,11 +13,11 @@ spec:
         metadata:
             labels:
                 type: api-client
-                client: lyft
+                client: uber
         spec:
             containers:
-                - name: lyft
-                  image: ridesaver/lyftclient:0.0.1
+                - name: uber
+                  image: ridesaver/uberclient:0.0.1
                   ports:
                       - containerPort: 80
                       - containerPort: 443
