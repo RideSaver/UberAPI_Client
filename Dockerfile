@@ -16,6 +16,13 @@ RUN dotnet nuget add source --username $github_username --password $github_token
 RUN dotnet cake --target=Publish --runtime="alpine-x64"
 
 FROM alpine:3.16 AS runtime
+# Add labels to add information to the image
+LABEL org.opencontainers.image.source=https://github.com/RideSaver/UberAPIClient
+LABEL org.opencontainers.image.description="Uber API Client for RideSaver"
+LABEL org.opencontainers.image.licenses=MIT
+
+# Add tags to define the api image
+
 # Add some libs required by .NET runtime
 RUN apk add --no-cache libstdc++ libintl
 
