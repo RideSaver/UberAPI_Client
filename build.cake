@@ -11,6 +11,7 @@ var configuration = Argument("configuration", "Release");
 var generator = Argument("generator", "csharp-netcore");
 var output_dir = Argument("output_dir", $"./build/{generator}");
 var packageName = Argument("package_name", "UberAPI.Client");
+var runtime = Argument("runtime", "x86");
 
 //////////////////////////////////////////////////////////////////////
 // TASKS
@@ -23,7 +24,7 @@ Task("Clean")
     CleanDirectory($"{output_dir}");
 });
 
-Task("GenerateOpenAPI")
+Task("Generate:OpenAPI")
     .IsDependentOn("Clean")
     .Does(() =>
 {
@@ -34,20 +35,8 @@ Task("GenerateOpenAPI")
     });
 });
 
-Task("Build:OpenAPI")
-    .IsDependentOn("GenerateOpenAPI")
-    .Does(() =>
-{
-    DotNetBuild($"{output_dir}/{packageName}.sln", new DotNetBuildSettings
-    {
-        Configuration = configuration,
-        Framework = "net6.0",
-        OutputDirectory = $"./build/{generator}/src/{packageName}/bin/{configuration}/lib/net6.0",
-    });
-});
-
 Task("Build")
-    .IsDependentOn("Build:OpenAPI")
+    .IsDependentOn("Generate:OpenAPI")
     .Does(() =>
 {
     DotNetBuild($"Server/UberClient.csproj", new DotNetBuildSettings
@@ -55,6 +44,22 @@ Task("Build")
         Configuration = configuration,
         Framework = "net6.0",
         OutputDirectory = $"./build/UberClient",
+        Runtime = runtime,
+    });
+});
+
+Task("Publish")
+    .IsDependentOn("Build")
+    .Does(()=>
+{
+    DotNetPublish("Server/UberClient.csproj", new DotNetPublishSettings {
+        Framework = "net6.0",
+        Configuration = "Release",
+        OutputDirectory = "./publish/",
+        SelfContained = true,
+        PublishTrimmed = true,
+        Runtime = runtime
+        // NoBuild = true
     });
 });
 
