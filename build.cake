@@ -5,14 +5,21 @@ using Cake.CodeGen.OpenApi;
 using Cake.Common.Tools.NuGet.NuGetAliases;
 using System.Text.RegularExpressions;
 
+var currentRuntime = System.Runtime.InteropServices.RuntimeInformation.RuntimeIdentifier ;
+var currentArchitecture = currentRuntime.Substring(currentRuntime.LastIndexOf("-") + 1);
+currentRuntime = currentRuntime.Substring(0, currentRuntime.LastIndexOf("-"));
+
 
 var target = Argument("target", "Build");
 var configuration = Argument("configuration", "Release");
 var generator = Argument("generator", "csharp-netcore");
 var output_dir = Argument("output_dir", $"./build/{generator}");
 var packageName = Argument("package_name", "UberAPI.Client");
-var architecture = Argument("architecture", System.Runtime.InteropServices.RuntimeInformation.OSArchitecture.ToLower());
-var runtime = Argument("runtime", System.Runtime.InteropServices.RuntimeInformation.RuntimeIdentifier.Split("-")[0]);
+var architecture = Argument("architecture", currentArchitecture);
+var runtime = Argument("runtime", currentRuntime);
+
+// Summary: The runtime identifier to compile for
+var Runtime = $"{runtime}-{architecture}";
 //////////////////////////////////////////////////////////////////////
 // TASKS
 //////////////////////////////////////////////////////////////////////
@@ -44,7 +51,7 @@ Task("Build")
         Configuration = configuration,
         Framework = "net6.0",
         OutputDirectory = $"./build/UberClient",
-        Runtime = $"{runtime}-{architecture}",
+        Runtime = Runtime,
     });
 });
 
@@ -58,7 +65,7 @@ Task("Publish")
         OutputDirectory = "./publish/",
         SelfContained = true,
         PublishTrimmed = true,
-        Runtime = $"{runtime}-{architecture}"
+        Runtime = Runtime
     });
 });
 

@@ -13,7 +13,7 @@ RUN dotnet tool restore
 # Copy all files
 COPY . .
 RUN dotnet nuget add source --username $github_username --password $github_token --store-password-in-clear-text --name github "https://nuget.pkg.github.com/RideSaver/index.json"
-RUN dotnet cake --target=Publish --runtime="alpine"
+RUN dotnet cake --target=Publish --runtime="linux-musl"
 
 FROM alpine:3.16 AS runtime
 # Add labels to add information to the image
