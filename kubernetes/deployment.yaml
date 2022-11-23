@@ -2,12 +2,14 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
     name: uber-client
-    type: api-client
-    client: uber
+    labels:
+        type: api-client
+        client: uber
 spec:
     selector:
         matchLabels:
-            app: clients
+            type: api-client
+            client: uber
     replicas: 1
     template:
         metadata:
@@ -17,7 +19,9 @@ spec:
         spec:
             containers:
                 - name: uber
-                  image: ridesaver/uberclient:0.0.1
+                  image: ghcr.io/ridesaver/uberclient:latest
                   ports:
                       - containerPort: 80
                       - containerPort: 443
+            imagePullSecrets:
+                - name: github-container-registry
