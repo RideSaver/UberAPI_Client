@@ -11,8 +11,8 @@ var configuration = Argument("configuration", "Release");
 var generator = Argument("generator", "csharp-netcore");
 var output_dir = Argument("output_dir", $"./build/{generator}");
 var packageName = Argument("package_name", "UberAPI.Client");
-var runtime = Argument("runtime", "x86");
-
+var architecture = Argument("architecture", System.Runtime.InteropServices.RuntimeInformation.OSArchitecture.ToLower());
+var runtime = Argument("runtime", System.Runtime.InteropServices.RuntimeInformation.RuntimeIdentifier.Split("-")[0]);
 //////////////////////////////////////////////////////////////////////
 // TASKS
 //////////////////////////////////////////////////////////////////////
@@ -44,7 +44,7 @@ Task("Build")
         Configuration = configuration,
         Framework = "net6.0",
         OutputDirectory = $"./build/UberClient",
-        Runtime = runtime,
+        Runtime = $"{runtime}-{architecture}",
     });
 });
 
@@ -58,8 +58,7 @@ Task("Publish")
         OutputDirectory = "./publish/",
         SelfContained = true,
         PublishTrimmed = true,
-        Runtime = runtime
-        // NoBuild = true
+        Runtime = $"{runtime}-{architecture}"
     });
 });
 
