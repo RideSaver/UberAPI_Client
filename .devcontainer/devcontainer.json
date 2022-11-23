@@ -15,7 +15,8 @@
 			"extensions": [
 				"EditorConfig.EditorConfig",
 				"zxh404.vscode-proto3",
-				"redhat.vscode-xml"
+				"redhat.vscode-xml",
+				"redhat.vscode-yaml"
 			]
 		}
 	}
