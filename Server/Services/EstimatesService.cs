@@ -1,6 +1,12 @@
 ﻿using Grpc.Core;
 using InternalAPI;
+using Microsoft.AspNetCore.Components.Routing;
+using System.ComponentModel;
 using UberAPI.Client.Model;
+using UberClient.HTTPClient;
+using Microsoft.Extensions.Caching.Distributed;
+using Microsoft.AspNetCore.Authorization;
+using System.Text;
 
 namespace UberClient.Services
 {
@@ -10,46 +16,76 @@ namespace UberClient.Services
         // Summary: our logging object, used for diagnostic logs.
         private readonly ILogger<EstimatesService> _logger;
         // Summary: our API client, so we only open up some ports, rather than swamping the system.
-        private HttpClient apiClient;
+        private readonly IHttpClientInstance _httpClient;
 
-        public EstimatesService(ILogger<EstimatesService> logger)
+        // Summary: our API client, so we only open up some ports, rather than swamping the system.
+        private UberAPI.Client.Api.RequestsApi _apiClient;
+
+        // Summary: Our cache object
+        private readonly IDistributedCache _cache;
+
+        public EstimatesService(ILogger<EstimatesService> logger, IDistributedCache cache, IHttpClientInstance httpClient)
         {
+            _httpClient = httpClient;
             _logger = logger;
-            apiClient = new HttpClient(new HttpClientHandler {
-                MaxConnectionsPerServer = 2 // Make sure we only open up a maximum of 2 connections per server (i.e. uber.com)
-            });
+            _cache = cache;
+            _apiClient = new UberAPI.Client.Api.RequestsApi(httpClient.APIClientInstance, new UberAPI.Client.Client.Configuration {});
         }
         public override async Task GetEstimates(GetEstimatesRequest request, IServerStreamWriter<EstimateModel> responseStream, ServerCallContext context)
         {
+            var SessionToken = context.AuthContext.PeerIdentityPropertyName;
+            _logger.LogInformation("HTTP Context User: {User}", SessionToken);
+            var encodedUserID = await _cache.GetAsync(SessionToken); // TODO: Figure out if this is the correct token
+
+            if (encodedUserID == null)
+            {
+                throw new NotImplementedException();
+            }
+            var UserID = Encoding.UTF8.GetString(encodedUserID);
+
+            var AccessToken = UserID; // TODO: Get Access Token From DB
+
             // Create new API client (since it doesn't seem to allow dynamic loading of credentials)
-            var apiClient = new UberAPI.Client.Api.RequestsApi(this.apiClient, new UberAPI.Client.Client.Configuration {
-                AccessToken = "" // TODO: Get access token from distributed cache
-            });
+            _apiClient.Configuration = new UberAPI.Client.Client.Configuration {
+                AccessToken = AccessToken
+            };
+
+            string clientId = "";
             // Loop through all the services in the request
             foreach (var service in request.Services)
             {
                 // Get estimate with parameters
-                var estimate = await apiClient.RequestsEstimatePostAsync(new RequestsEstimatePostRequest
+                var estimate = await _apiClient.RequestsEstimatePostAsync(new RequestsEstimatePostRequest
                 {
                     StartLatitude = (decimal)request.StartPoint.Latitude,
                     StartLongitude = (decimal)request.StartPoint.Longitude,
                     EndLatitude = (decimal)request.EndPoint.Latitude,
                     EndLongitude = (decimal)request.EndPoint.Longitude,
                     SeatCount = request.Seats,
-                    ProductId = service // TODO: Get proper product id from map
+                    ProductId = service
                 });
+                var EstimateId = "New ID Generator"; // TODO: Use ID generator function
                 // Write an InternalAPI model back
-                await responseStream.WriteAsync(new EstimateModel
-                {
-                    // TODO: populate most of this data with data from the estimate.
-                    EstimateId = "NEW ID GENERATOR",
+
+                var estimateModel = new EstimateModel() {
+                     EstimateId = EstimateId,
+                    //CreatedTime = DateTime.UtcNow, 
                     PriceDetails = new CurrencyModel
                     {
                         Price = (double)estimate.HighEstimate,
                         Currency = estimate.CurrencyCode
                     },
-                    Distance = (int)estimate.Distance
-                });
+                    Distance = (int)estimate.Distance,
+                    Seats = request.Seats, //toDo Look up Table for non-shared services 
+                    RequestUrl = $"https://m.uber.com/ul/?client_id={clientId}&action=setPickup&pickup[latitude]={request.StartPoint.Latitude}&pickup[longitude]={request.StartPoint.Longitude}&dropoff[latitude]={request.EndPoint.Latitude}&dropoff[longitude]={request.EndPoint.Longitude}&product_id={service}",
+                    DisplayName = estimate.DisplayName,
+                };
+
+                estimateModel.WayPoints.Add(request.StartPoint);
+                estimateModel.WayPoints.Add(request.EndPoint);
+
+                await responseStream.WriteAsync(estimateModel);
+
             }
         }
 

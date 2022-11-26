@@ -1,5 +1,6 @@
 // using UberClient.HTTPClient;
 using UberClient.Services;
+using UberClient.HTTPClient;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -11,6 +12,7 @@ builder.Services.AddDistributedRedisCache(options => {
     options.Configuration = "localhost:6379";  
     options.InstanceName = "";  
 });
+builder.Services.AddSingleton<IHttpClientInstance, HttpClientInstance>();
 builder.Services.AddGrpc();
 
 var app = builder.Build();
