@@ -55,7 +55,7 @@ namespace UberClient.Services
             foreach (var service in request.Services)
             {
                 // Get estimate with parameters
-                var estimate = await _apiClient.RequestsEstimatePostAsync(new RequestsEstimatePostRequest
+                var estimate = await _apiClient.PriceEstimatesAsync(new RequestsEstimatePostRequest
                 {
                     StartLatitude = (decimal)request.StartPoint.Latitude,
                     StartLongitude = (decimal)request.StartPoint.Longitude,
@@ -85,7 +85,7 @@ namespace UberClient.Services
                 estimateModel.WayPoints.Add(request.EndPoint);
 
                 await responseStream.WriteAsync(estimateModel);
-
+                return;
             }
         }
 

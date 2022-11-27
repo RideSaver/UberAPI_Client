@@ -48,11 +48,9 @@ namespace UberClient.Services
                 AccessToken = AccessToken
             };
             // Get ride with parameters
-            var ride = await _apiClient.RequestRequestIdGetAsync(request.RideId);
+            var ride = await _apiClient.RequestRequestIdAsync(request.RideId);
             // Write an InternalAPI model back
-            return new RideModel
-            {
-                // TODO: populate most of this data with data from the estimate.
+            return new RideModel() {
                 RideId = "NEW ID GENERATOR",
                 //EstimatedTimeOfArrival,
                 RiderOnBoard = ride.Status == "in_progress",
@@ -75,12 +73,26 @@ namespace UberClient.Services
             };
         }
 
-        public override Task<RideModel> PostRideRequest(PostRideRequestModel request, ServerCallContext context)
+        public override async Task<RideModel> PostRideRequest(PostRideRequestModel request, ServerCallContext context)
         {
-            var postRide = new RideModel();
-            // TBA: Invoke the web-client API to get the information from the uber-api, then send it to the microservice.
+            var SessionToken = context.AuthContext.PeerIdentityPropertyName;
+            _logger.LogInformation("HTTP Context User: {User}", SessionToken);
+            var encodedUserID = await _cache.GetAsync(SessionToken); // TODO: Figure out if this is the correct token
 
-            return Task.FromResult(postRide);
+            if (encodedUserID == null)
+            {
+                throw new NotImplementedException();
+            }
+            var UserID = Encoding.UTF8.GetString(encodedUserID);
+
+            var AccessToken = UserID; // TODO: Get Access Token From DB
+
+            // Create new API client (since it doesn't seem to allow dynamic loading of credentials)
+            _apiClient.Configuration = new UberAPI.Client.Client.Configuration {
+                AccessToken = AccessToken
+            };
+            // Get ride with parameters
+            var ride = await _apiClient.CreateRequestsAsync(request.EstimateId);
         }
 
         public override Task<CurrencyModel> DeleteRideRequest(DeleteRideRequestModel request, ServerCallContext context) 
