@@ -1,4 +1,4 @@
-openapi: "3.0.2"
+openapi: "3.1.2"
 info:
   title: Uber API
   description: Uber Mock Api Specification
@@ -74,6 +74,7 @@ paths:
     get:
       summary: Price Estimates
       description: The Price Estimates endpoint returns an estimated price range for each product offered at a given location. The price estimate is provided as a formatted string with the full price range and the localized currency symbol.<br><br>The response also includes low and high estimates, and the [ISO 4217](http://en.wikipedia.org/wiki/ISO_4217) currency code for situations requiring currency conversion. When surge is active for a particular product, its surge_multiplier will be greater than 1, but the price estimate already factors in this multiplier.
+      operationId: PriceEstimates
       parameters:
         - name: start_latitude
           in: query
@@ -124,6 +125,7 @@ paths:
     get:
       summary: Time Estimates
       description: The Time Estimates endpoint returns ETAs for all products offered at a given location, with the responses expressed as integers in seconds. We recommend that this endpoint be called every minute to provide the most accurate, up-to-date ETAs.
+      operationId: TimeEstimate
       parameters:
         - name: start_latitude
           in: query
@@ -264,6 +266,7 @@ paths:
     post:
       summary: Create Requests
       description: The Ride Request endpoint allows a ride to be requested on behalf of an Uber user.
+      operationId: CreateRequests
       tags:
         - Requests
       requestBody:
@@ -290,6 +293,7 @@ paths:
       description: The Ride Request endpoint allows retrieving the status of an ongoing or completed trip that was created by your app.
 
         By default, only details about trips your app requested will be accessible. If your app has all_trips scope, however, trip details will be returned for all trips irrespective of which application initiated them.
+      operationId: RequestRequestId
       parameters:
         - name: request_id
           in: path
@@ -338,6 +342,7 @@ paths:
       description: The Ride Request endpoint allows cancellation of an ongoing Request on behalf of a rider.
       tags:
         - Requests
+      operationID: DeleteRequests
       parameters:
         - name: request_id
           in: path
@@ -392,6 +397,7 @@ paths:
                 $ref: "#/components/schemas/receipt"
   /requests/estimate:
     post:
+      operationId: RequestsEstimate
       tags:
         - Requests
       requestBody:
