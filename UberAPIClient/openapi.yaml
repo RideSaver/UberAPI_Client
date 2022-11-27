@@ -342,7 +342,7 @@ paths:
       description: The Ride Request endpoint allows cancellation of an ongoing Request on behalf of a rider.
       tags:
         - Requests
-      operationID: DeleteRequests
+      operationId: DeleteRequests
       parameters:
         - name: request_id
           in: path
