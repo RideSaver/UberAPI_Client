@@ -1,4 +1,4 @@
-openapi: "3.1.2"
+openapi: "3.0.2"
 info:
   title: Uber API
   description: Uber Mock Api Specification
@@ -44,6 +44,7 @@ paths:
                 $ref: "#/components/schemas/Error"
   /products/{product_id}:
     get:
+      operationId: productProductId
       summary: Product Types
       description: The Products endpoint returns information about the Uber products offered at a given location. The response includes the display name and other details about each product, and lists the products in the proper display order.
       parameters:
@@ -63,7 +64,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ProductList"
+                $ref: "#/components/schemas/Product"
         default:
           description: Unexpected error
           content:
@@ -275,8 +276,12 @@ paths:
             schema:
               $ref: "#/components/schemas/Requests"
       responses:
-        '202': 
+        '202':
           description: Accepted
+          content: 
+            application/json:
+              schema:
+                $ref: "#/components/schemas/request_id"
         '400':
           description: Bad Request
         '403':
@@ -310,12 +315,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/request_id"
-        default:
-          description: Unexpected error
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Error"
     patch:
       summary: Update Requests
       description: The Ride Request endpoint allows updating an ongoing request’s destination using the Ride Request endpoint.
@@ -501,7 +500,7 @@ components:
               type: number
               format: float
               description: The base price
-            canellation_fee:
+            cancellation_fee:
               type: number
               format: float
               description: The fee if a rider cancels the trip after the grace period
@@ -702,6 +701,7 @@ components:
         - start_longitude
         - end_longitude
     request_id:
+      type: object
       properties:
         product_id:
           type: string
@@ -748,10 +748,9 @@ components:
             bearing: 
               type: integer
         pickup:
-          items:
-            $ref: "#/components/schemas/trip"
+          $ref: "#/components/schemas/trip"
         destination:
-            $ref: "#/components/schemas/trip"
+          $ref: "#/components/schemas/trip"
         waypoints:
           properties: 
             rider_id: 
