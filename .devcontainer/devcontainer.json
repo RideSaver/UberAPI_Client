@@ -1,34 +1,50 @@
-// For format details, see https://aka.ms/devcontainer.json. For config options, see the README at:
-// https://github.com/microsoft/vscode-dev-containers/tree/v0.245.2/containers/javascript-node
+// For format details, see https://aka.ms/devcontainer.json. For config options, see the
+// README at: https://github.com/devcontainers/templates/tree/main/src/dotnet-mssql
 {
-	"name": "C# (.NET)",
-	"build": {
-		"dockerfile": "Dockerfile"
-	},
-	"features": {
-		"ghcr.io/devcontainers/features/node:1": {
-			"version": "lts"
-		}
-	},
+	"name": "Uber Client and Associated Services",
+	"dockerComposeFile": "docker-compose.yml",
+	"service": "uber_client",
+	"workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}",
+
+	// Features to add to the dev container. More info: https://containers.dev/features.
+	// "features": {},
+
+	// Configure tool-specific properties.
 	"customizations": {
+		// Configure properties specific to VS Code.
 		"vscode": {
+			// Set *default* container specific settings.json values on container create.
+			"settings": {
+				"mssql.connections": [
+					{
+						"server": "mssql,1433",
+						"database": "",
+						"authenticationType": "SqlLogin",
+						"user": "sa",
+						"password": "P@ssw0rd",
+						"emptyPasswordInput": false,
+						"savePassword": false,
+						"profileName": "mssql-container"
+					}
+				]
+			},
+
+			// Add the IDs of extensions you want installed when the container is created.
 			"extensions": [
 				"EditorConfig.EditorConfig",
 				"zxh404.vscode-proto3",
 				"redhat.vscode-xml",
-				"redhat.vscode-yaml"
+                "ms-dotnettools.csharp",
+				"ms-mssql.mssql"
 			]
 		}
-	}
+	},
 
 	// Use 'forwardPorts' to make a list of ports inside the container available locally.
 	// "forwardPorts": [5000, 5001],
 
-	// Use 'postCreateCommand' to run commands after the container is created.
-	// "postCreateCommand": "dotnet restore",
-
-	// Configure tool-specific properties.
-	// "customizations": {},
+	// postCreateCommand.sh parameters: $1=SA password, $2=dacpac path, $3=sql script(s) path
+	"postCreateCommand": "bash .devcontainer/mssql/postCreateCommand.sh 'P@ssw0rd' './bin/Debug/' './.devcontainer/mssql/'"
 
 	// Uncomment to connect as root instead. More info: https://aka.ms/dev-containers-non-root.
 	// "remoteUser": "root"
