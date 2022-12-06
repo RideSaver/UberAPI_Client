@@ -60,12 +60,12 @@ namespace UberClient.Services
             var cacheEstimate = await _cache.GetAsync<EstimateCache> (request.RideId);
             // Write an InternalAPI model back
             return new RideModel() {
-                RideId = "NEW ID GENERATOR",
+                RideId = request.RideId,
                 EstimatedTimeOfArrival = Google.Protobuf.WellKnownTypes.Timestamp.FromDateTime(DateTime.Now.AddSeconds(ride.Pickup.Eta)),
                 RiderOnBoard = ride.Status == "in_progress",
                 Price = new CurrencyModel {
-                    Price = (double)cacheEstimate.PriceEstimate.HighEstimate,
-                    Currency = cacheEstimate.PriceEstimate.CurrencyCode
+                    Price = (double)cacheEstimate.EstimateInfo.Price,
+                    Currency = cacheEstimate.EstimateInfo.Currency,
                 },
                 Driver = new DriverModel {
                     DisplayName = ride.Drivers.Name,
@@ -103,24 +103,25 @@ namespace UberClient.Services
                 AccessToken = AccessToken
             };
             var cacheEstimate = await _cache.GetAsync<EstimateCache> (request.EstimateId);
-            UberAPI.Client.Model.Requests requests = new UberAPI.Client.Model.Requests(cacheEstimate.PriceEstimate.Fare.FareId) {
+            UberAPI.Client.Model.CreateRequests requests = new UberAPI.Client.Model.CreateRequests() {
+                FareId = cacheEstimate.EstimateInfo.FareId,
                 ProductId = cacheEstimate.ProductId.ToString(),
                 StartLatitude = (float)cacheEstimate.GetEstimatesRequest.StartPoint.Latitude,
                 StartLongitude = (float)cacheEstimate.GetEstimatesRequest.StartPoint.Longitude,
                 EndLatitude = (float)cacheEstimate.GetEstimatesRequest.EndPoint.Latitude,
-                EndLongitude = (float)cacheEstimate.GetEstimatesRequest.EndPoint.Longitude
+                EndLongitude = (float)cacheEstimate.GetEstimatesRequest.EndPoint.Longitude,
             };
             
             var ride = await _apiClient.CreateRequestsAsync(requests);
             cacheEstimate.RequestId = Guid.Parse(ride._RequestId);
             _=_cache.SetAsync<EstimateCache>(request.EstimateId, cacheEstimate, options);
             return new RideModel() {
-                RideId = "NEW ID GENERATOR",
+                RideId = request.EstimateId,
                 EstimatedTimeOfArrival = Google.Protobuf.WellKnownTypes.Timestamp.FromDateTime(DateTime.Now.AddSeconds(ride.Pickup.Eta)),
                 RiderOnBoard = ride.Status == "in_progress",
                 Price = new CurrencyModel {
-                    Price = (double)cacheEstimate.PriceEstimate.HighEstimate,
-                    Currency = cacheEstimate.PriceEstimate.CurrencyCode
+                    Price = (double)cacheEstimate.EstimateInfo.Price,
+                    Currency = cacheEstimate.EstimateInfo.Currency
                 },
                 Driver = null,
                 RideStage = getStageFromStatus(ride.Status),
@@ -148,10 +149,9 @@ namespace UberClient.Services
             _apiClient.Configuration = new UberAPI.Client.Client.Configuration {
                 AccessToken = AccessToken
             };
-
             // Get ride with parameters
             await _apiClient.DeleteRequestsAsync(cacheEstimate.RequestId.ToString());
-
+            // Create new API client (since it doesn't seem to allow dynamic loading of credentials)
             _productsApiClient.Configuration = new UberAPI.Client.Client.Configuration {
                 AccessToken = AccessToken
             };

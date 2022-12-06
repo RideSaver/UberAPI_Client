@@ -66,7 +66,7 @@ namespace UberClient.Services
                     AccessToken = AccessToken
                 };
                 // Get estimate with parameters
-                var estimate = await _apiClient.RequestsEstimateAsync(new RequestsEstimateRequest
+                var estimate = EstimateInfo.FromEstimateResponse(await _apiClient.RequestsEstimateAsync(new RequestsEstimateRequest
                 {
                     StartLatitude = (decimal)request.StartPoint.Latitude,
                     StartLongitude = (decimal)request.StartPoint.Longitude,
@@ -74,32 +74,32 @@ namespace UberClient.Services
                     EndLongitude = (decimal)request.EndPoint.Longitude,
                     SeatCount = request.Seats,
                     ProductId = service
-                });
-                var EstimateId = DataAccess.Services.ServiceID.CreateServiceID(service); // TODO: Use ID generator function, currently not working
+                }));
+                var EstimateId = DataAccess.Services.ServiceID.CreateServiceID(service); // TODO: Use ID generator function
                 _productsApiClient.Configuration = new UberAPI.Client.Client.Configuration {
                     AccessToken = AccessToken
                 };
                 var product = await _productsApiClient.ProductProductIdAsync(service);
                 // Write an InternalAPI model back
                 var estimateModel = new EstimateModel() {
-                    EstimateId = EstimateId,
+                    EstimateId = EstimateId.ToString(),
                     CreatedTime = Google.Protobuf.WellKnownTypes.Timestamp.FromDateTime(DateTime.Now), 
                     PriceDetails = new CurrencyModel
                     {
-                        Price = (double)estimate.HighEstimate,
-                        Currency = estimate.CurrencyCode
+                        Price = (double)estimate.Price,
+                        Currency = estimate.Currency,
                     },
                     Distance = (int)estimate.Distance,
                     Seats = product.Shared ? request.Seats : product.Capacity,
                     RequestUrl = $"https://m.uber.com/ul/?client_id={clientId}&action=setPickup&pickup[latitude]={request.StartPoint.Latitude}&pickup[longitude]={request.StartPoint.Longitude}&dropoff[latitude]={request.EndPoint.Latitude}&dropoff[longitude]={request.EndPoint.Longitude}&product_id={service}",
-                    DisplayName = estimate.DisplayName,
+                    DisplayName = product.DisplayName,
                 };
 
                 estimateModel.WayPoints.Add(request.StartPoint);
                 estimateModel.WayPoints.Add(request.EndPoint);
 
-                _=_cache.SetAsync<EstimateCache>(EstimateId, new EstimateCache { 
-                    PriceEstimate = estimate,
+                _=_cache.SetAsync<EstimateCache>(EstimateId.ToString(), new EstimateCache { 
+                    EstimateInfo = estimate,
                     GetEstimatesRequest = request,
                     ProductId = Guid.Parse(service)
                 }, options);
