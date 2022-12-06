@@ -435,9 +435,7 @@ paths:
           content: 
             application/json:
               schema:
-                $ref: "#/components/schemas/PriceEstimate"
-
-
+                $ref: "#/components/schemas/RequestEstimateResponse"
 components:
   securitySchemes:
     apikey:
@@ -462,6 +460,148 @@ components:
             request_receipt: Get receipt details for Requests made by application.
             all_trips: Access trip details about all future Uber trips. Including pickup, destination, and real-time location for all of your future rides.
   schemas:
+    RequestEstimateResponse:
+      oneOf:
+        - $ref: "#/components/schemas/EstimateWithSurge"
+        - $ref: "#/components/schemas/EstimateWithoutSurge"
+    EstimateWithoutSurge:
+      type: object
+      properties:
+        fare:
+          type: object
+          description: The upfront fare details.
+          properties:
+            value:
+              type: number
+              description: The total upfront fare value.
+            fare_id:
+              type: string
+              description: A unique upfront fare identifier.
+            expires_at:
+              type: integer
+              description: The fare_id expiration as a Unix timestamp.
+            display:
+              type: string
+              description: Formatted string of estimate in local currency.
+            currency_code:
+              type: string
+              description: ISO 4217 currency code.
+            breakdown:
+              type: array
+              description: An array of objects which make up the fare. The value of these objects can be summed to arrive at fare.value.
+              items:
+                type: object
+                properties:
+                  type:
+                    type: string
+                    description: The type of breakdown this object represents. Can be base_fare or promotion.
+                  notice:
+                    type: string
+                    description: A notice to show to the rider when a fare is higher than normal due to increased demand.
+                  value:
+                    type: number
+                    description: The value of this portion of the fare. This can be a negative or positive value.
+                  name:
+                    type: string
+                    description: A string that can be displayed to the user representing this portion of the fare.
+                required:
+                  - type
+                  - value
+                  - name
+        trip:
+          type: object
+          description: Estimated distance details.
+          properties:
+            distance_unit:
+              type: string
+              description: The distance unit, either mile or km.
+            duration_estimate:
+              type: integer
+              description: Expected activity duration (in seconds).
+            distance_estimate:
+              type: number
+              description: Expected activity distance.
+          required:
+            - distance_unit
+            - duration_estimate
+            - distance_estimate
+        pickup_estimate:
+          type: integer
+          description: The estimate vehicle arrival time in minutes. null if no cars are available.
+    EstimateWithSurge:
+      type: object
+      properties:
+        estimate:
+          type: object
+          description: Estimated fare details. Only products that don’t support upfront fares return this value.
+          properties:
+            surge_confirmation_href:
+              type: string
+              description: The URL a user must visit to accept surge pricing.
+            high_estimate:
+              type: integer
+              description: Upper bound of the estimate.
+            surge_confirmation_id:
+              type: string
+              description: A user’s unique surge session identifier. null if no surge is in effect.
+            minimum:
+              type: integer
+              description: The minimum trip fare. Only used and displayed if no end location is provided.
+            low_estimate:
+              type: integer
+              description: Lower bound of the estimate.
+            fare_breakdown:
+              type: array
+              description: Charges that contribute to the total fare. Trips with upfront pricing don’t have a breakdown.
+              items:
+                type: object
+                properties:
+                  low_amount:
+                    type: number
+                    description: Lower bound of the charge.
+                  high_amount:
+                    type: number
+                    description: Upper bound of the charge.
+                  display_amount:
+                    type: string
+                    description: Formatted string of the breakdown charge. Charges are ranges except for flat charges, which are single numbers.
+                  display_name:
+                    type: string
+                    description: Charge name.
+              required:
+                - low_amount
+                - high_amount
+                - display_amount
+                - display_name
+            surge_multiplier:
+              type: number
+              description: Expected surge multiplier. Surge is active if surge_multiplier is greater than 1. Fare estimates below factor in the surge multiplier.
+            display:
+              type: string
+              description: Estimates are ranges except for the TAXI product, which uses “Metered”.
+            currency_code:
+              type: string
+              description: ISO 4217 currency code.
+        trip:
+          type: object
+          description: Estimated distance details.
+          properties:
+            distance_unit:
+              type: string
+              description: The distance unit, either mile or km.
+            duration_estimate:
+              type: integer
+              description: Expected activity duration (in seconds).
+            distance_estimate:
+              type: number
+              description: Expected activity distance.
+          required:
+            - distance_unit
+            - duration_estimate
+            - distance_estimate
+        pickup_estimate:
+          type: integer
+          description: The estimate vehicle arrival time in minutes. null if no cars are available.
     ProductList:
       properties:
         products:
