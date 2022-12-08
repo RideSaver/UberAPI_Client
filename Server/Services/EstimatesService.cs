@@ -10,7 +10,12 @@ using System.Text;
 using UberClient.Server.Extensions.Cache;
 using UberClient.Models;
 using DataAccess;
+using UberClient.Repository;
 
+//! A Estimates Service class. 
+/*!
+ * Uber Client that sends a request to the Estimate Service via TCP port protocol, then retrieves and converts the information in gRPC.
+ */
 namespace UberClient.Services
 {
     // Summary: Handles all requests for estimates
@@ -30,32 +35,22 @@ namespace UberClient.Services
         // Summary: Our cache object
         private readonly IDistributedCache _cache;
 
-        public EstimatesService(ILogger<EstimatesService> logger, IDistributedCache cache, IHttpClientInstance httpClient)
+        // Summary: Our Access Token Controller
+        private readonly IAccessTokenController _accessController;
+
+        public EstimatesService(ILogger<EstimatesService> logger, IDistributedCache cache, IHttpClientInstance httpClient, IAccessTokenController accessContoller)
         {
             _httpClient = httpClient;
             _logger = logger;
             _cache = cache;
             _apiClient = new UberAPI.Client.Api.RequestsApi(httpClient.APIClientInstance, new UberAPI.Client.Client.Configuration {});
             _productsApiClient = new UberAPI.Client.Api.ProductsApi(httpClient.APIClientInstance, new UberAPI.Client.Client.Configuration {});
+            _accessController = accessContoller;
         }
         public override async Task GetEstimates(GetEstimatesRequest request, IServerStreamWriter<EstimateModel> responseStream, ServerCallContext context)
         {
             var SessionToken = context.AuthContext.PeerIdentityPropertyName;
             _logger.LogInformation("HTTP Context User: {User}", SessionToken);
-            var encodedUserID = await _cache.GetAsync(SessionToken); // TODO: Figure out if this is the correct token
-
-            if (encodedUserID == null)
-            {
-                throw new NotImplementedException();
-            }
-            var UserID = Encoding.UTF8.GetString(encodedUserID);
-
-            var AccessToken = UserID; // TODO: Get Access Token From DB
-
-            // Create new API client (since it doesn't seem to allow dynamic loading of credentials)
-            _apiClient.Configuration = new UberAPI.Client.Client.Configuration {
-                AccessToken = AccessToken
-            };
 
             string clientId = "";
             DistributedCacheEntryOptions options = new DistributedCacheEntryOptions() { AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(24)};
@@ -63,7 +58,7 @@ namespace UberClient.Services
             foreach (var service in request.Services)
             {
                 _apiClient.Configuration = new UberAPI.Client.Client.Configuration {
-                    AccessToken = AccessToken
+                    AccessToken = await _accessController.GetAccessToken(SessionToken, service),
                 };
                 // Get estimate with parameters
                 var estimate = EstimateInfo.FromEstimateResponse(await _apiClient.RequestsEstimateAsync(new RequestsEstimateRequest
@@ -75,9 +70,9 @@ namespace UberClient.Services
                     SeatCount = request.Seats,
                     ProductId = service
                 }));
-                var EstimateId = DataAccess.Services.ServiceID.CreateServiceID(service); // TODO: Use ID generator function
+                var EstimateId = DataAccess.Services.ServiceID.CreateServiceID(service); 
                 _productsApiClient.Configuration = new UberAPI.Client.Client.Configuration {
-                    AccessToken = AccessToken
+                    AccessToken = await _accessController.GetAccessToken(SessionToken, service),
                 };
                 var product = await _productsApiClient.ProductProductIdAsync(service);
                 // Write an InternalAPI model back
@@ -108,12 +103,60 @@ namespace UberClient.Services
             }
         }
 
-        public override Task<EstimateModel> GetEstimateRefresh(GetEstimateRefreshRequest request, ServerCallContext context)
+        public override async Task<EstimateModel> GetEstimateRefresh(GetEstimateRefreshRequest request, ServerCallContext context)
         {
-            var estimateRefresh = new EstimateModel();
-            // TBA: Invoke the web-client API to get the information from the uber-api, then send it to the microservice.
+            var SessionToken = context.AuthContext.PeerIdentityPropertyName;
+            _logger.LogInformation("HTTP Context User: {User}", SessionToken);
 
-            return Task.FromResult(estimateRefresh);
+            string clientId = "";
+            DistributedCacheEntryOptions options = new DistributedCacheEntryOptions() { AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(24)};
+
+            EstimateCache prevEstimate = await _cache.GetAsync<EstimateCache>(request.EstimateId);
+            var oldRequest = prevEstimate.GetEstimatesRequest;
+            string service = prevEstimate.ProductId.ToString();
+            // Get estimate with parameters
+            _apiClient.Configuration = new UberAPI.Client.Client.Configuration {
+                AccessToken = await _accessController.GetAccessToken(SessionToken, service),
+            };
+            var estimate = EstimateInfo.FromEstimateResponse(await _apiClient.RequestsEstimateAsync(new RequestsEstimateRequest
+            {
+                StartLatitude = (decimal)oldRequest.StartPoint.Latitude,
+                StartLongitude = (decimal)oldRequest.StartPoint.Longitude,
+                EndLatitude = (decimal)oldRequest.EndPoint.Latitude,
+                EndLongitude = (decimal)oldRequest.EndPoint.Longitude,
+                SeatCount = oldRequest.Seats,
+                ProductId = service
+            }));
+            var EstimateId = DataAccess.Services.ServiceID.CreateServiceID(service); 
+            _productsApiClient.Configuration = new UberAPI.Client.Client.Configuration {
+                AccessToken = await _accessController.GetAccessToken(SessionToken, service),
+            };
+            var product = await _productsApiClient.ProductProductIdAsync(service);
+            // Write an InternalAPI model back
+            var estimateModel = new EstimateModel() {
+                EstimateId = EstimateId.ToString(),
+                CreatedTime = Google.Protobuf.WellKnownTypes.Timestamp.FromDateTime(DateTime.Now), 
+                PriceDetails = new CurrencyModel
+                {
+                    Price = (double)estimate.Price,
+                    Currency = estimate.Currency,
+                },
+                Distance = (int)estimate.Distance,
+                Seats = product.Shared ? oldRequest.Seats : product.Capacity,
+                RequestUrl = $"https://m.uber.com/ul/?client_id={clientId}&action=setPickup&pickup[latitude]={oldRequest.StartPoint.Latitude}&pickup[longitude]={oldRequest.StartPoint.Longitude}&dropoff[latitude]={oldRequest.EndPoint.Latitude}&dropoff[longitude]={oldRequest.EndPoint.Longitude}&product_id={service}",
+                DisplayName = product.DisplayName,
+            };
+
+            estimateModel.WayPoints.Add(oldRequest.StartPoint);
+            estimateModel.WayPoints.Add(oldRequest.EndPoint);
+
+            _=_cache.SetAsync<EstimateCache>(EstimateId.ToString(), new EstimateCache { 
+                EstimateInfo = estimate,
+                GetEstimatesRequest = oldRequest,
+                ProductId = prevEstimate.ProductId
+            }, options);
+
+            return estimateModel;
         }
     }
 }
