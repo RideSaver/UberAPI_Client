@@ -52,7 +52,7 @@ namespace UberClient.Services
             var SessionToken = context.AuthContext.PeerIdentityPropertyName;
             _logger.LogInformation("HTTP Context User: {User}", SessionToken);
 
-            string clientId = "";
+            string clientId = "al0I63Gjwk3Wsmhq_EL8_HxB8qWlO7yY";
             DistributedCacheEntryOptions options = new DistributedCacheEntryOptions() { AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(24)};
             // Loop through all the services in the request
             foreach (var service in request.Services)
