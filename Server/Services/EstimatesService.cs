@@ -11,14 +11,40 @@ using UberClient.Server.Extensions.Cache;
 using UberClient.Models;
 using DataAccess;
 using UberClient.Repository;
+/// @startuml
+/// participant Services as S
+/// participant UberClient as UC
+/// collections UberAPI as API
+/// database    Cache    as C
+/// S -> UC : Access Token
+/// Activate UC
+/// UC -> C : Request EstimateId
+/// Activate C
+/// UC <-- C : Return EstimateId
+/// Deactivate C
+/// UC -> API : GET/POST/DELETE Request
+/// Activate API
+/// UC <-- API : Estimate/Ride Object Response
+/// Deactivate API
+/// UC -> C : Update/New EstimateId
+/// Activate C
+/// S <- UC : Data
+/// Deactivate UC
+/// @enduml
 
 //! A Estimates Service class. 
 /*!
- * Uber Client that sends a request to the Estimate Service via TCP port protocol, then retrieves and converts the information in gRPC.
+ * This class handles all requests for estimates. It contains call two methods: GetEstimates and GetEstimateRefresh.
+ * The GetEstimates method requests the estimate resources from the Uber API. Firstly, it receives the user's access token 
+ * and the protocol buffer data to be deserialized into the standard models. Then, it is serialized into uber models and 
+ * an authentication token is added. The Uber Client makes a GET request to the Uber API, which returns an response object 
+ * that contains the request estimate data. A loop is used for each instance, added to the EstimateId, then stored in the cache. 
+ * Finally, the Uber Client returns the data to the services that requested it. The GetEstimateRefresh requests new estimate 
+ * resources from the Uber API to replace the old resources. It requests the EstimateId held in the cache, then functions like 
+ * the GetEstimates method except replaces the previous EstimateId with a newly created one.
  */
 namespace UberClient.Services
 {
-    // Summary: Handles all requests for estimates
     public class EstimatesService : Estimates.EstimatesBase
     {
         // Summary: our logging object, used for diagnostic logs.
@@ -47,6 +73,32 @@ namespace UberClient.Services
             _productsApiClient = new UberAPI.Client.Api.ProductsApi(httpClient.APIClientInstance, new UberAPI.Client.Client.Configuration {});
             _accessController = accessContoller;
         }
+        /// @startuml
+        /// state "Get Access Token" as AT
+        /// state "gRPC call to Uber Client" as Cl
+        /// Cl : Estimate Values
+        /// state "Uber Client receives protocol buffer data" as RD
+        /// state "Add Authentication Token to Uber Client" as AuthT
+        /// state "Make Get Estimate request to Uber API" as GE
+        /// GE : Request Object as Parameter
+        /// state "Uber sends back data of requested estimate list" as EO
+        /// state "Uber Client receives response object" as RO
+        /// RO : loops through each instance and adds to EstimateId
+        /// state "EstimateId to cache" as C
+        /// state "Uber Client sends the data to the service" as S
+        ///
+        /// [*] -d-> AT
+        /// AT -d-> Cl
+        /// Cl -d-> RD
+        /// RD -d-> AuthT : Deserializes to standard model
+        /// AuthT -d-> GE : Serializes to uber model
+        /// GE -d-> EO
+        /// EO -d-> RO
+        /// RO -d-> C : Serialization to protocol buffer data
+        /// C ------> AT
+        /// C -d-> S
+        /// S -d-> [*]
+        ///@enduml
         public override async Task GetEstimates(GetEstimatesRequest request, IServerStreamWriter<EstimateModel> responseStream, ServerCallContext context)
         {
             var SessionToken = context.AuthContext.PeerIdentityPropertyName;
@@ -102,7 +154,33 @@ namespace UberClient.Services
                 await responseStream.WriteAsync(estimateModel);
             }
         }
-
+        /// @startuml
+        /// state "Get Access Token" as AT
+        /// state "gRPC call to Uber Client" as Cl
+        /// Cl : Previous EstimateId
+        /// state "Get Previous EstimateId from cache" as GEC
+        /// state "Uber Client receives protocol buffer data" as RD
+        /// state "Add Authentication Token to Uber Client" as AuthT
+        /// state "Make Get Estimate request to Uber API" as GE
+        /// GE : Request Object as Parameter
+        /// state "Uber sends back data of requested estimate list" as EO
+        /// state "Uber Client receives response object" as RO
+        /// RO : iterates once through instances and adds to EstimateId
+        /// state "Create new EstimateId to cache" as UC
+        /// state "Uber Client sends the data to the service" as S
+        /// 
+        /// [*] -d-> AT
+        /// AT -d-> Cl
+        /// Cl -d-> GEC
+        /// GEC -d-> RD
+        /// RD -d-> AuthT : Deserializes to standard model
+        /// AuthT -d-> GE : Serializes to uber model
+        /// GE -d-> EO
+        /// EO -d-> RO
+        /// RO -d-> UC : Serialization to protocol buffer data
+        /// UC -d-> S
+        /// S -d-> [*]
+        /// @enduml
         public override async Task<EstimateModel> GetEstimateRefresh(GetEstimateRefreshRequest request, ServerCallContext context)
         {
             var SessionToken = context.AuthContext.PeerIdentityPropertyName;
