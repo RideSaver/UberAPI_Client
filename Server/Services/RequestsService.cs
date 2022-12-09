@@ -13,7 +13,15 @@ using DataAccess;
 
 //! A Requests Service class. 
 /*!
- * Uber Client that sends a request to the Request Service via TCP port protocol, then retrieves and converts the information in gRPC.
+ * This class handles all requests for rides. It contains call two methods: GetEstimates and GetEstimateRefresh.
+ * The GetRideRequest method requests ride resources from the Uber API. Firstly, it receives the user's access token, 
+ * requests the EstimateId from cache, and the protocol buffer data to be deserialized into the standard models. 
+ * Then, it is serialized into uber models and an authentication token is added. The Uber Client makes a GET request 
+ * to the Uber API, which returns an response object that contains the request estimate data. A loop is used for each instance
+ * and is added to the EstimateId. Finally, the Uber Client returns the data to the services that requested it. 
+ * The PostRideRequest method creates a new ride from the resources GetRideRequest had returned to the service. It functions 
+ * like the GetRideRequest, except it updates the existing EstimateId since the ride is being created. The DeleteRideRequests 
+ * method deletes the ride requested by the service by following the same process as the GetRideRequest method.
  */
 namespace UberClient.Services
 {
@@ -40,11 +48,31 @@ namespace UberClient.Services
             _productsApiClient = new UberAPI.Client.Api.ProductsApi(httpClient.APIClientInstance, new UberAPI.Client.Client.Configuration {});
             _accessController = accessContoller;
         }
-        //! public override async member that takes two arguments and returns an Task<RideModel> value.
-        /*!
-         \param request an GetRideRequestModel argument.
-         \param context an ServerCallContext argument.
-        */
+        /// @startuml
+        /// state "Get Access Token" as AT
+        /// state "gRPC call to Uber Client" as Cl
+        /// Cl : EstimateId/RequestId
+        /// state "Get EstimateId from cache" as GEC
+        /// state "Uber Client receives protocol buffer data" as RD
+        /// state "Add Authentication Token to Uber Client" as AuthT
+        /// state "Make Get Ride request to Uber API" as GR
+        /// GR : Request Object as Parameter
+        /// state "Uber sends back data of requested ride list" as ReqO
+        /// state "Uber Client receives response object" as RO
+        /// RO : iterates once through instances and adds to EstimateId
+        /// state "Uber Client sends the data to the service" as S
+        /// 
+        /// [*] -d-> AT
+        /// AT -d-> Cl
+        /// Cl -d-> GEC
+        /// GEC -d-> RD
+        /// RD -d-> AuthT : Deserializes to standard model
+        /// AuthT -d-> GR : Serializes to uber model
+        /// GR -d-> ReqO
+        /// ReqO -d-> RO
+        /// RO -d-> S : Serialization to protocol buffer data
+        /// S -d-> [*]
+        /// @enduml
         public override async Task<RideModel> GetRideRequest(GetRideRequestModel request, ServerCallContext context)
         {
             var SessionToken = context.AuthContext.PeerIdentityPropertyName; /*< \var string SessionToken */
@@ -52,10 +80,6 @@ namespace UberClient.Services
 
             DistributedCacheEntryOptions options = new DistributedCacheEntryOptions() { AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(24) };
             //! Creating cacheEstimate with parameters.
-            /*!
-             \var EstimateCache cacheEstimate
-             \param request.RideId parameter used to retrieve service.
-            */
             var cacheEstimate = await _cache.GetAsync<EstimateCache> (request.RideId);
             // Create new API client (since it doesn't seem to allow dynamic loading of credentials)
             _apiClient.Configuration = new UberAPI.Client.Client.Configuration
@@ -87,7 +111,33 @@ namespace UberClient.Services
                 },
             };
         }
-
+        /// @startuml
+        /// state "Get Access Token" as AT
+        /// state "gRPC call to Uber Client" as Cl
+        /// Cl : EstimateId/RequestId
+        /// state "Get EstimateId from cache" as GEC
+        /// state "Uber Client receives protocol buffer data" as RD
+        /// state "Add Authentication Token to Uber Client" as AuthT
+        /// state "Make Post Ride request to Uber API" as PR
+        /// PR : Request Object as Parameter
+        /// state "Uber sends back data of requested ride list" as ReqO
+        /// state "Uber Client receives response object" as RO
+        /// RO : iterates once through instances and adds to EstimateId
+        /// state "Update EstimateId to cache" as UC
+        /// state "Uber Client sends the data to the service" as S
+        /// 
+        /// [*] -d-> AT
+        /// AT -d-> Cl
+        /// Cl -d-> GEC
+        /// GEC -d-> RD
+        /// RD -d-> AuthT : Deserializes to standard model
+        /// AuthT -d-> PR : Serializes to uber model
+        /// PR -d-> ReqO
+        /// ReqO -d-> RO
+        /// RO -d-> UC : Serialization to protocol buffer data
+        /// UC -d-> S
+        /// S -d-> [*]
+        /// @enduml
         public override async Task<RideModel> PostRideRequest(PostRideRequestModel request, ServerCallContext context)
         {
             var SessionToken = context.AuthContext.PeerIdentityPropertyName;
@@ -125,7 +175,31 @@ namespace UberClient.Services
                 DriverLocation = null,
             };
         }
-
+        /// @startuml
+        /// state "Get Access Token" as AT
+        /// state "gRPC call to Uber Client" as Cl
+        /// Cl : EstimateId/RequestId
+        /// state "Get EstimateId from cache" as GEC
+        /// state "Uber Client receives protocol buffer data" as RD
+        /// state "Add Authentication Token to Uber Client" as AuthT
+        /// state "Make Delete Ride request to Uber API" as DR
+        /// DR : Request Object as Parameter
+        /// state "Uber sends back data of requested ride list" as ReqO
+        /// state "Uber Client receives response object" as RO
+        /// RO : iterates once through instances and adds to EstimateId
+        /// state "Uber Client sends the data to the service" as S
+        /// 
+        /// [*] -d-> AT
+        /// AT -d-> Cl
+        /// Cl -d-> GEC
+        /// GEC -d-> RD
+        /// RD -d-> AuthT : Deserializes to standard model
+        /// AuthT -d-> DR : Serializes to uber model
+        /// DR -d-> ReqO
+        /// ReqO -d-> RO
+        /// RO -d-> S : Serialization to protocol buffer data
+        /// S -d-> [*]
+        /// @enduml
         public override async Task<CurrencyModel> DeleteRideRequest(DeleteRideRequestModel request, ServerCallContext context) 
         {
             var SessionToken = context.AuthContext.PeerIdentityPropertyName;
