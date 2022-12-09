@@ -2,7 +2,7 @@ using Grpc.Core;
 using InternalAPI;
 using Microsoft.AspNetCore.Components.Routing;
 using System.ComponentModel;
-using UberAPI.Client.Model;
+using UberAPI;
 using UberClient.HTTPClient;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.AspNetCore.Authorization;
@@ -11,6 +11,7 @@ using UberClient.Server.Extensions.Cache;
 using UberClient.Models;
 using DataAccess;
 using UberClient.Repository;
+using UberAPI.Client.Model;
 
 //! A Estimates Service class. 
 /*!
@@ -118,7 +119,7 @@ namespace UberClient.Services
             _apiClient.Configuration = new UberAPI.Client.Client.Configuration {
                 AccessToken = await _accessController.GetAccessToken(SessionToken, service),
             };
-            var estimate = EstimateInfo.FromEstimateResponse(await _apiClient.RequestsEstimateAsync(new RequestsEstimateRequest
+            var estimate = EstimateInfo.FromEstimateResponse(await _apiClient.RequestsEstimateAsync(new RequestsEstimateRequest()
             {
                 StartLatitude = (decimal)oldRequest.StartPoint.Latitude,
                 StartLongitude = (decimal)oldRequest.StartPoint.Longitude,
