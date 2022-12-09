@@ -5,6 +5,11 @@ using InternalAPI;
 using UberClient.Models;
 namespace UberClient.Repository
 {
+    //! \class AccessTokenController
+    /*!
+     * This class inherits the IAccessTokenController interface. Additionally, it is uses the 
+     * AccessTokenController constructor and GetAccessToken method to get the user access token.
+    */
     public class AccessTokenController : IAccessTokenController
     {
         public AccessTokenController()
