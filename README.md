@@ -8,4 +8,4 @@ Insert your Username, and [Personal Access Token](https://github.com/settings/to
 This folder contains the OpenAPI specification, along with the openapi-generator configuration.
 
 ### Server
-This folder contains the implementation of the Internal API to Uber API adapter.
+This folder contains the implementation of the Internal API to Uber API adapter - pls
