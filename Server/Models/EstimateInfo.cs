@@ -1,4 +1,5 @@
 using UberAPI.Client.Model;
+using UberAPI;
 
 namespace UberClient.Models {
     public class EstimateInfo
