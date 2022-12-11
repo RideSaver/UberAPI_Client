@@ -26,11 +26,6 @@
     <PackageReference Include="System.ComponentModel.Annotations" Version="5.0.0" />
   </ItemGroup>
   <ItemGroup>
-    <Protobuf Include="..\..\InternalAPI\protos\Authentication.proto" GrpcServices="Both">
-      <Link>Protos\Authentication.proto</Link>
-    </Protobuf>
-  </ItemGroup>
-  <ItemGroup>
     <Reference Include="UberAPI.Client">
       <HintPath>..\build\csharp-netcore\src\UberAPI.Client\obj\Release\net6.0\UberAPI.Client.dll</HintPath>
     </Reference>
