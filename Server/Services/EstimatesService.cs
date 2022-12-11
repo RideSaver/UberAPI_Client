@@ -1,14 +1,10 @@
 using Grpc.Core;
 using InternalAPI;
-using Microsoft.AspNetCore.Components.Routing;
-using System.ComponentModel;
-using UberClient.HTTPClient;
 using Microsoft.Extensions.Caching.Distributed;
-using Microsoft.AspNetCore.Authorization;
-using System.Text;
+
+using UberClient.HTTPClient;
 using UberClient.Server.Extensions.Cache;
 using UberClient.Models;
-using DataAccess;
 using UberClient.Repository;
 
 using RequestsApi = UberAPI.Client.Api.RequestsApi;

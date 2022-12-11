@@ -11,11 +11,11 @@
     <PackageReference Include="Grpc.Core" Version="2.46.5" />
     <PackageReference Include="Microsoft.AspNet.WebApi" Version="5.2.9" />
     <PackageReference Include="Microsoft.Bot.Schema" Version="4.18.1" />
-    <PackageReference Include="Microsoft.Extensions.ApiDescription.Client" Version="3.0.0">
+    <PackageReference Include="Microsoft.Extensions.ApiDescription.Client" Version="7.0.0">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
-    <PackageReference Include="NSwag.ApiDescription.Client" Version="13.0.5">
+    <PackageReference Include="NSwag.ApiDescription.Client" Version="13.18.0">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
@@ -28,7 +28,8 @@
     
   <ItemGroup>
     <Reference Include="UberAPI.Client">
-      <HintPath>..\build\UberClient\UberAPI.Client.dll</HintPath>
+      <HintPath>..\build\csharp-netcore\src\UberAPI.Client\obj\Release\net6.0\UberAPI.Client.dll</HintPath>
+      <Aliases></Aliases>
     </Reference>
   </ItemGroup>
 

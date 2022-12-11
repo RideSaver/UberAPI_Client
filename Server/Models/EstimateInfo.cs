@@ -1,13 +1,13 @@
 using UberAPI.Client.Model;
-using UberAPI;
 
-namespace UberClient.Models {
+namespace UberClient.Models
+{
     public class EstimateInfo
     {
-        public string FareId { get; set; }
+        public string? FareId { get; set; }
         public int Distance { get; set; }
         public double Price { get; set; }
-        public string Currency { get; set; }
+        public string? Currency { get; set; }
         public static EstimateInfo FromEstimateResponse(RequestEstimateResponse estimateResponse)
         {
             if (estimateResponse.GetType() == typeof(EstimateWithSurge))
