@@ -15,12 +15,10 @@ namespace Services.ServicesService
     public class ServicesService : InternalAPI.Services.ServicesClient
     {
         private readonly InternalAPI.Services.ServicesClient _services;
-        private readonly GrpcChannel _channel;
 
         public ServicesService(InternalAPI.Services.ServicesClient services)
         {
             _services = services;
-            _channel = GrpcChannel.ForAddress($"https://services.api:7042");
             RegisterServiceRequest();
         }
 

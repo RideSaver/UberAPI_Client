@@ -11,6 +11,10 @@ using UberClient.Models;
 using DataAccess;
 using UberClient.Repository;
 
+using RequestsApi = UberAPI.Client.Api.RequestsApi;
+using ProductsApi = UberAPI.Client.Api.ProductsApi;
+using Configuration = UberAPI.Client.Client.Configuration;
+
 //! A Estimates Service class. 
 /*!
  * Uber Client that sends a request to the Estimate Service via TCP port protocol, then retrieves and converts the information in gRPC.
@@ -26,10 +30,10 @@ namespace UberClient.Services
         private readonly IHttpClientInstance _httpClient;
 
         // Summary: our API client, so we only open up some ports, rather than swamping the system.
-        private UberAPI.Client.Api.RequestsApi _apiClient;
+        private RequestsApi _apiClient;
 
         // Summary: our API client, so we only open up some ports, rather than swamping the system.
-        private UberAPI.Client.Api.ProductsApi _productsApiClient;
+        private ProductsApi _productsApiClient;
 
         // Summary: Our cache object
         private readonly IDistributedCache _cache;
@@ -42,8 +46,8 @@ namespace UberClient.Services
             _httpClient = httpClient;
             _logger = logger;
             _cache = cache;
-            _apiClient = new UberAPI.Client.Api.RequestsApi(httpClient.APIClientInstance, new UberAPI.Client.Client.Configuration {});
-            _productsApiClient = new UberAPI.Client.Api.ProductsApi(httpClient.APIClientInstance, new UberAPI.Client.Client.Configuration {});
+            _apiClient = new RequestsApi(httpClient.APIClientInstance, new Configuration {});
+            _productsApiClient = new ProductsApi(httpClient.APIClientInstance, new Configuration {});
             _accessController = accessContoller;
         }
         public override async Task GetEstimates(GetEstimatesRequest request, IServerStreamWriter<EstimateModel> responseStream, ServerCallContext context)
@@ -56,7 +60,7 @@ namespace UberClient.Services
             // Loop through all the services in the request
             foreach (var service in request.Services)
             {
-                _apiClient.Configuration = new UberAPI.Client.Client.Configuration {
+                _apiClient.Configuration = new Configuration {
                     AccessToken = await _accessController.GetAccessToken(SessionToken, service),
                 };
                 // Get estimate with parameters
@@ -70,7 +74,7 @@ namespace UberClient.Services
                     ProductId = service
                 }));
                 var EstimateId = DataAccess.Services.ServiceID.CreateServiceID(service); 
-                _productsApiClient.Configuration = new UberAPI.Client.Client.Configuration {
+                _productsApiClient.Configuration = new Configuration {
                     AccessToken = await _accessController.GetAccessToken(SessionToken, service),
                 };
                 var product = await _productsApiClient.ProductProductIdAsync(service);
@@ -114,7 +118,7 @@ namespace UberClient.Services
             var oldRequest = prevEstimate.GetEstimatesRequest;
             string service = prevEstimate.ProductId.ToString();
             // Get estimate with parameters
-            _apiClient.Configuration = new UberAPI.Client.Client.Configuration {
+            _apiClient.Configuration = new Configuration {
                 AccessToken = await _accessController.GetAccessToken(SessionToken, service),
             };
             var estimate = EstimateInfo.FromEstimateResponse(await _apiClient.RequestsEstimateAsync(new UberAPI.Client.Model.RequestsEstimateRequest()

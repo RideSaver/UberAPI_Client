@@ -28,6 +28,7 @@
   <ItemGroup>
     <Reference Include="UberAPI.Client">
       <HintPath>..\build\csharp-netcore\src\UberAPI.Client\obj\Release\net6.0\UberAPI.Client.dll</HintPath>
+      <Aliases></Aliases>
     </Reference>
   </ItemGroup>
 

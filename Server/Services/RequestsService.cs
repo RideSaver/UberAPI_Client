@@ -1,15 +1,16 @@
 using Grpc.Core;
 using InternalAPI;
-using Microsoft.AspNetCore.Components.Routing;
-using System.ComponentModel;
 using UberClient.HTTPClient;
 using Microsoft.Extensions.Caching.Distributed;
-using Microsoft.AspNetCore.Authorization;
-using System.Text;
+
 using UberClient.Server.Extensions.Cache;
 using UberClient.Models;
 using UberClient.Repository;
-using DataAccess;
+
+using RequestsApi = UberAPI.Client.Api.RequestsApi;
+using ProductsApi = UberAPI.Client.Api.ProductsApi;
+using Configuration = UberAPI.Client.Client.Configuration;
+
 
 //! A Requests Service class. 
 /*!
@@ -23,9 +24,9 @@ namespace UberClient.Services
         // Summary: our API client, so we only open up some ports, rather than swamping the system.
         private readonly IHttpClientInstance _httpClient;
         // Summary: our API client, so we only open up some ports, rather than swamping the system.
-        private UberAPI.Client.Api.RequestsApi _apiClient;
+        private RequestsApi _apiClient;
         // Summary: our API client, so we only open up some ports, rather than swamping the system.
-        private UberAPI.Client.Api.ProductsApi _productsApiClient;
+        private ProductsApi _productsApiClient;
         // Summary: Our cache object
         private readonly IDistributedCache _cache;
         // Summary: Our Access Token Controller
@@ -36,8 +37,8 @@ namespace UberClient.Services
             _httpClient = httpClient;
             _logger = logger;
             _cache = cache;
-            _apiClient = new UberAPI.Client.Api.RequestsApi(httpClient.APIClientInstance, new UberAPI.Client.Client.Configuration {});
-            _productsApiClient = new UberAPI.Client.Api.ProductsApi(httpClient.APIClientInstance, new UberAPI.Client.Client.Configuration {});
+            _apiClient = new RequestsApi(httpClient.APIClientInstance, new Configuration {});
+            _productsApiClient = new ProductsApi(httpClient.APIClientInstance, new Configuration {});
             _accessController = accessContoller;
         }
         //! public override async member that takes two arguments and returns an Task<RideModel> value.
@@ -58,7 +59,7 @@ namespace UberClient.Services
             */
             var cacheEstimate = await _cache.GetAsync<EstimateCache> (request.RideId);
             // Create new API client (since it doesn't seem to allow dynamic loading of credentials)
-            _apiClient.Configuration = new UberAPI.Client.Client.Configuration
+            _apiClient.Configuration = new Configuration
             {
                 AccessToken = await _accessController.GetAccessToken(SessionToken, cacheEstimate.ProductId.ToString()),
             };
@@ -97,7 +98,7 @@ namespace UberClient.Services
 
             var cacheEstimate = await _cache.GetAsync<EstimateCache> (request.EstimateId);
             // Create new API client (since it doesn't seem to allow dynamic loading of credentials)
-            _apiClient.Configuration = new UberAPI.Client.Client.Configuration {
+            _apiClient.Configuration = new Configuration {
                 AccessToken = await _accessController.GetAccessToken(SessionToken, cacheEstimate.ProductId.ToString()),
             };
             UberAPI.Client.Model.CreateRequests requests = new UberAPI.Client.Model.CreateRequests() {
@@ -135,13 +136,13 @@ namespace UberClient.Services
             string accessToken = await _accessController.GetAccessToken(SessionToken, cacheEstimate.ProductId.ToString());
 
             // Create new API client (since it doesn't seem to allow dynamic loading of credentials)
-            _apiClient.Configuration = new UberAPI.Client.Client.Configuration {
+            _apiClient.Configuration = new Configuration {
                 AccessToken = accessToken,
             };
             // Get ride with parameters
             await _apiClient.DeleteRequestsAsync(cacheEstimate.RequestId.ToString());
             // Create new API client (since it doesn't seem to allow dynamic loading of credentials)
-            _productsApiClient.Configuration = new UberAPI.Client.Client.Configuration {
+            _productsApiClient.Configuration = new Configuration {
                 AccessToken = accessToken,
             };
             var product = await _productsApiClient.ProductProductIdAsync(cacheEstimate.ProductId.ToString());
