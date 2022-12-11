@@ -1,28 +1,18 @@
-using Grpc.Core;
-using Grpc.Net.Client;
 using UberClient.Services;
 using UberClient.Repository;
 using UberClient.HTTPClient;
-using InternalAPI;
-using Microsoft.Data.SqlClient;
-using ByteString = Google.Protobuf.ByteString;
-
-
-
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddMvc();
-
 builder.Services.AddDistributedRedisCache(options =>
 {  
     options.Configuration ="https//uber-redis:6379";  
     options.InstanceName = "";  
 });
+
 builder.Services.AddSingleton<IHttpClientInstance, HttpClientInstance>();
-
 builder.Services.AddSingleton<IAccessTokenController, AccessTokenController>();
-
 builder.Services.AddGrpc();
 
 builder.Services.AddGrpcClient<InternalAPI.Services.ServicesClient>(o =>
@@ -33,9 +23,7 @@ builder.Services.AddGrpcClient<InternalAPI.Services.ServicesClient>(o =>
 var app = builder.Build();
 
 app.UseHttpsRedirection();
-
 app.UseAuthorization();
-
 app.MapControllers();
 
 app.MapGrpcService<EstimatesService>();
