@@ -38,6 +38,8 @@ spec:
           ports:
             - containerPort: 80
             - containerPort: 443
+          args:
+            - --urls https://0.0.0.0:443,http://0.0.0.0:80
           volumeMounts:
             - name: certificate
               mountPath: /certs
