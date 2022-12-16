@@ -2,49 +2,40 @@ using Grpc.Core;
 using InternalAPI;
 using Microsoft.Extensions.Caching.Distributed;
 
-using UberClient.HTTPClient;
 using UberClient.Server.Extensions.Cache;
 using UberClient.Models;
-using UberClient.Repository;
 
 using RequestsApi = UberAPI.Client.Api.RequestsApi;
 using ProductsApi = UberAPI.Client.Api.ProductsApi;
 using Configuration = UberAPI.Client.Client.Configuration;
+using System.Net.Http;
 
-//! A Estimates Service class. 
-/*!
- * Uber Client that sends a request to the Estimate Service via TCP port protocol, then retrieves and converts the information in gRPC.
- */
+
 namespace UberClient.Services
 {
     // Summary: Handles all requests for estimates
     public class EstimatesService : Estimates.EstimatesBase
     {
-        // Summary: our logging object, used for diagnostic logs.
         private readonly ILogger<EstimatesService> _logger;
-        // Summary: our API client, so we only open up some ports, rather than swamping the system.
-        private readonly IHttpClientInstance _httpClient;
-
-        // Summary: our API client, so we only open up some ports, rather than swamping the system.
-        private RequestsApi _apiClient;
-
-        // Summary: our API client, so we only open up some ports, rather than swamping the system.
-        private ProductsApi _productsApiClient;
-
-        // Summary: Our cache object
+        private readonly IHttpClientFactory _clientFactory;
         private readonly IDistributedCache _cache;
+        private readonly IAccessTokenService _accessTokenService;
 
-        // Summary: Our Access Token Controller
-        private readonly IAccessTokenController _accessController;
+        private readonly RequestsApi _requestsApiClient;
+        private readonly ProductsApi _productsApiClient;
+        private readonly HttpClient _httpClient;
 
-        public EstimatesService(ILogger<EstimatesService> logger, IDistributedCache cache, IHttpClientInstance httpClient, IAccessTokenController accessContoller)
+        public EstimatesService(ILogger<EstimatesService> logger, IDistributedCache cache, IHttpClientFactory clientFactory, IAccessTokenService accessTokenService)
         {
-            _httpClient = httpClient;
+            _clientFactory= clientFactory;
+            _httpClient = _clientFactory.CreateClient();
+            _accessTokenService = accessTokenService;
+
             _logger = logger;
             _cache = cache;
-            _apiClient = new RequestsApi(httpClient.APIClientInstance, new Configuration {});
-            _productsApiClient = new ProductsApi(httpClient.APIClientInstance, new Configuration {});
-            _accessController = accessContoller;
+
+            _requestsApiClient = new RequestsApi(_httpClient, new Configuration { });
+            _productsApiClient = new ProductsApi(_httpClient, new Configuration {});
         }
         public override async Task GetEstimates(GetEstimatesRequest request, IServerStreamWriter<EstimateModel> responseStream, ServerCallContext context)
         {
@@ -56,11 +47,10 @@ namespace UberClient.Services
             // Loop through all the services in the request
             foreach (var service in request.Services)
             {
-                _apiClient.Configuration = new Configuration {
-                    AccessToken = await _accessController.GetAccessToken(SessionToken, service),
-                };
+                _requestsApiClient.Configuration = new Configuration { AccessToken = await _accessTokenService.GetAccessTokenAsync(SessionToken, service) };
+
                 // Get estimate with parameters
-                var estimate = EstimateInfo.FromEstimateResponse(await _apiClient.RequestsEstimateAsync(new UberAPI.Client.Model.RequestsEstimateRequest
+                var estimate = EstimateInfo.FromEstimateResponse(await _requestsApiClient.RequestsEstimateAsync(new UberAPI.Client.Model.RequestsEstimateRequest
                 {
                     StartLatitude = (decimal)request.StartPoint.Latitude,
                     StartLongitude = (decimal)request.StartPoint.Longitude,
@@ -69,13 +59,16 @@ namespace UberClient.Services
                     SeatCount = request.Seats,
                     ProductId = service
                 }));
-                var EstimateId = DataAccess.Services.ServiceID.CreateServiceID(service); 
-                _productsApiClient.Configuration = new Configuration {
-                    AccessToken = await _accessController.GetAccessToken(SessionToken, service),
-                };
+
+                var EstimateId = DataAccess.Services.ServiceID.CreateServiceID(service);
+
+                _productsApiClient.Configuration = new Configuration { AccessToken = await _accessTokenService.GetAccessTokenAsync(SessionToken, service) };
+
                 var product = await _productsApiClient.ProductProductIdAsync(service);
+
                 // Write an InternalAPI model back
-                var estimateModel = new EstimateModel() {
+                var estimateModel = new EstimateModel()
+                {
                     EstimateId = EstimateId.ToString(),
                     CreatedTime = Google.Protobuf.WellKnownTypes.Timestamp.FromDateTime(DateTime.Now), 
                     PriceDetails = new CurrencyModel
@@ -92,7 +85,8 @@ namespace UberClient.Services
                 estimateModel.WayPoints.Add(request.StartPoint);
                 estimateModel.WayPoints.Add(request.EndPoint);
 
-                _=_cache.SetAsync<EstimateCache>(EstimateId.ToString(), new EstimateCache { 
+                await _cache.SetAsync(EstimateId.ToString(), new EstimateCache
+                { 
                     EstimateInfo = estimate,
                     GetEstimatesRequest = request,
                     ProductId = Guid.Parse(service)
@@ -108,16 +102,17 @@ namespace UberClient.Services
             _logger.LogInformation("HTTP Context User: {User}", SessionToken);
 
             string clientId = "al0I63Gjwk3Wsmhq_EL8_HxB8qWlO7yY";
-            DistributedCacheEntryOptions options = new DistributedCacheEntryOptions() { AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(24)};
+
+            DistributedCacheEntryOptions options = new DistributedCacheEntryOptions() { AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(24) };
 
             EstimateCache prevEstimate = await _cache.GetAsync<EstimateCache>(request.EstimateId);
             var oldRequest = prevEstimate.GetEstimatesRequest;
             string service = prevEstimate.ProductId.ToString();
+
             // Get estimate with parameters
-            _apiClient.Configuration = new Configuration {
-                AccessToken = await _accessController.GetAccessToken(SessionToken, service),
-            };
-            var estimate = EstimateInfo.FromEstimateResponse(await _apiClient.RequestsEstimateAsync(new UberAPI.Client.Model.RequestsEstimateRequest()
+            _requestsApiClient.Configuration = new Configuration { AccessToken = await _accessTokenService.GetAccessTokenAsync(SessionToken, service) };
+                
+            var estimate = EstimateInfo.FromEstimateResponse(await _requestsApiClient.RequestsEstimateAsync(new UberAPI.Client.Model.RequestsEstimateRequest()
             {
                 StartLatitude = (decimal)oldRequest.StartPoint.Latitude,
                 StartLongitude = (decimal)oldRequest.StartPoint.Longitude,
@@ -126,13 +121,16 @@ namespace UberClient.Services
                 SeatCount = oldRequest.Seats,
                 ProductId = service
             }));
-            var EstimateId = DataAccess.Services.ServiceID.CreateServiceID(service); 
-            _productsApiClient.Configuration = new UberAPI.Client.Client.Configuration {
-                AccessToken = await _accessController.GetAccessToken(SessionToken, service),
-            };
+
+            var EstimateId = DataAccess.Services.ServiceID.CreateServiceID(service);
+
+            _productsApiClient.Configuration = new UberAPI.Client.Client.Configuration { AccessToken = await _accessTokenService.GetAccessTokenAsync(SessionToken, service) };
+   
             var product = await _productsApiClient.ProductProductIdAsync(service);
+
             // Write an InternalAPI model back
-            var estimateModel = new EstimateModel() {
+            var estimateModel = new EstimateModel()
+            {
                 EstimateId = EstimateId.ToString(),
                 CreatedTime = Google.Protobuf.WellKnownTypes.Timestamp.FromDateTime(DateTime.Now), 
                 PriceDetails = new CurrencyModel
@@ -149,7 +147,8 @@ namespace UberClient.Services
             estimateModel.WayPoints.Add(oldRequest.StartPoint);
             estimateModel.WayPoints.Add(oldRequest.EndPoint);
 
-            _=_cache.SetAsync<EstimateCache>(EstimateId.ToString(), new EstimateCache { 
+            await _cache.SetAsync(EstimateId.ToString(), new EstimateCache
+            { 
                 EstimateInfo = estimate,
                 GetEstimatesRequest = oldRequest,
                 ProductId = prevEstimate.ProductId

@@ -1,51 +1,41 @@
 using Grpc.Core;
 using InternalAPI;
-using UberClient.HTTPClient;
 using Microsoft.Extensions.Caching.Distributed;
 
 using UberClient.Server.Extensions.Cache;
 using UberClient.Models;
-using UberClient.Repository;
 
 using RequestsApi = UberAPI.Client.Api.RequestsApi;
 using ProductsApi = UberAPI.Client.Api.ProductsApi;
 using Configuration = UberAPI.Client.Client.Configuration;
 
 
-//! A Requests Service class. 
-/*!
- * Uber Client that sends a request to the Request Service via TCP port protocol, then retrieves and converts the information in gRPC.
- */
 namespace UberClient.Services
 {
     public class RequestsService : Requests.RequestsBase
     {
         private readonly ILogger<RequestsService> _logger;
-        // Summary: our API client, so we only open up some ports, rather than swamping the system.
-        private readonly IHttpClientInstance _httpClient;
-        // Summary: our API client, so we only open up some ports, rather than swamping the system.
-        private RequestsApi _apiClient;
-        // Summary: our API client, so we only open up some ports, rather than swamping the system.
-        private ProductsApi _productsApiClient;
-        // Summary: Our cache object
+        private readonly IHttpClientFactory _clientFactory;
         private readonly IDistributedCache _cache;
-        // Summary: Our Access Token Controller
-        private readonly IAccessTokenController _accessController;
+        private readonly IAccessTokenService _accessTokenService;
 
-        public RequestsService(ILogger<RequestsService> logger, IDistributedCache cache, IHttpClientInstance httpClient, IAccessTokenController accessContoller)
+        private readonly RequestsApi _requestsApiClient;
+        private readonly ProductsApi _productsApiClient;
+        private readonly HttpClient _httpClient;
+
+        public RequestsService(ILogger<RequestsService> logger, IDistributedCache cache, IHttpClientFactory clientFactory, IAccessTokenService accessTokenService)
         {
-            _httpClient = httpClient;
+            _clientFactory = clientFactory;
+            _httpClient = _clientFactory.CreateClient();
+            _accessTokenService = accessTokenService;
+
             _logger = logger;
             _cache = cache;
-            _apiClient = new RequestsApi(httpClient.APIClientInstance, new Configuration {});
-            _productsApiClient = new ProductsApi(httpClient.APIClientInstance, new Configuration {});
-            _accessController = accessContoller;
+
+            _requestsApiClient = new RequestsApi(_httpClient, new Configuration { });
+            _productsApiClient = new ProductsApi(_httpClient, new Configuration { });
         }
-        //! public override async member that takes two arguments and returns an Task<RideModel> value.
-        /*!
-         \param request an GetRideRequestModel argument.
-         \param context an ServerCallContext argument.
-        */
+
         public override async Task<RideModel> GetRideRequest(GetRideRequestModel request, ServerCallContext context)
         {
             var SessionToken = context.AuthContext.PeerIdentityPropertyName; /*< \var string SessionToken */
@@ -59,12 +49,12 @@ namespace UberClient.Services
             */
             var cacheEstimate = await _cache.GetAsync<EstimateCache> (request.RideId);
             // Create new API client (since it doesn't seem to allow dynamic loading of credentials)
-            _apiClient.Configuration = new Configuration
+            _requestsApiClient.Configuration = new Configuration
             {
-                AccessToken = await _accessController.GetAccessToken(SessionToken, cacheEstimate.ProductId.ToString()),
+                AccessToken = await _accessTokenService.GetAccessTokenAsync(SessionToken!, cacheEstimate.ProductId.ToString()),
             };
             //! Creating variable ride with parameters.
-            var ride = await _apiClient.RequestRequestIdAsync(request.RideId);
+            var ride = await _requestsApiClient.RequestRequestIdAsync(request.RideId);
             // Write an InternalAPI model back
             return new RideModel() {
                 RideId = request.RideId,
@@ -98,8 +88,8 @@ namespace UberClient.Services
 
             var cacheEstimate = await _cache.GetAsync<EstimateCache> (request.EstimateId);
             // Create new API client (since it doesn't seem to allow dynamic loading of credentials)
-            _apiClient.Configuration = new Configuration {
-                AccessToken = await _accessController.GetAccessToken(SessionToken, cacheEstimate.ProductId.ToString()),
+            _requestsApiClient.Configuration = new Configuration {
+                AccessToken = await _accessTokenService.GetAccessTokenAsync(SessionToken, cacheEstimate.ProductId.ToString()),
             };
             UberAPI.Client.Model.CreateRequests requests = new UberAPI.Client.Model.CreateRequests() {
                 FareId = cacheEstimate.EstimateInfo.FareId,
@@ -110,7 +100,7 @@ namespace UberClient.Services
                 EndLongitude = (float)cacheEstimate.GetEstimatesRequest.EndPoint.Longitude,
             };
             
-            var ride = await _apiClient.CreateRequestsAsync(requests);
+            var ride = await _requestsApiClient.CreateRequestsAsync(requests);
             cacheEstimate.RequestId = Guid.Parse(ride._RequestId);
             _=_cache.SetAsync<EstimateCache>(request.EstimateId, cacheEstimate, options);
             return new RideModel() {
@@ -133,14 +123,14 @@ namespace UberClient.Services
             _logger.LogInformation("HTTP Context User: {User}", SessionToken);
 
             var cacheEstimate = await _cache.GetAsync<EstimateCache> (request.RideId);
-            string accessToken = await _accessController.GetAccessToken(SessionToken, cacheEstimate.ProductId.ToString());
+            string accessToken = await _accessTokenService.GetAccessTokenAsync(SessionToken, cacheEstimate.ProductId.ToString());
 
             // Create new API client (since it doesn't seem to allow dynamic loading of credentials)
-            _apiClient.Configuration = new Configuration {
+            _requestsApiClient.Configuration = new Configuration {
                 AccessToken = accessToken,
             };
             // Get ride with parameters
-            await _apiClient.DeleteRequestsAsync(cacheEstimate.RequestId.ToString());
+            await _requestsApiClient.DeleteRequestsAsync(cacheEstimate.RequestId.ToString());
             // Create new API client (since it doesn't seem to allow dynamic loading of credentials)
             _productsApiClient.Configuration = new Configuration {
                 AccessToken = accessToken,
