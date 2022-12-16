@@ -24,7 +24,7 @@ LABEL org.opencontainers.image.licenses=MIT
 # Add tags to define the api image
 
 # Add some libs required by .NET runtime
-RUN apk add --no-cache libstdc++ libintl
+RUN apk add --no-cache libstdc++ libintl openssl
 
 EXPOSE 80
 EXPOSE 443
