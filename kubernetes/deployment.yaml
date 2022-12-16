@@ -1,28 +1,51 @@
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: uber-cert
+  namespace: client
+spec:
+  secretName: uber-cert-secret
+  dnsNames:
+    - uber
+    - uber.client
+  issuerRef:
+    name: ridesaver-ca
+    kind: ClusterIssuer
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-    name: uber-client
-    namespace: client
-    labels:
+  name: uber-client
+  namespace: client
+  labels:
+    type: api-client
+    client: uber
+spec:
+  selector:
+    matchLabels:
+      type: api-client
+      client: uber
+  replicas: 1
+  template:
+    metadata:
+      labels:
         type: api-client
         client: uber
-spec:
-    selector:
-        matchLabels:
-            type: api-client
-            client: uber
-    replicas: 1
-    template:
-        metadata:
-            labels:
-                type: api-client
-                client: uber
-        spec:
-            containers:
-                - name: uber
-                  image: ghcr.io/ridesaver/uberclient:latest
-                  ports:
-                      - containerPort: 80
-                      - containerPort: 443
-            imagePullSecrets:
-                - name: github-container-registry
+    spec:
+      containers:
+        - name: uber
+          image: ghcr.io/ridesaver/uberclient:latest
+          ports:
+            - containerPort: 80
+            - containerPort: 443
+          volumeMounts:
+            - name: certificate
+              mountPath: /certs
+              readOnly: true
+      volumes:
+        - name: certificate
+          secret:
+            secretName: uber-cert-secret
+            optional: true
+      imagePullSecrets:
+        - name: github-container-registry
