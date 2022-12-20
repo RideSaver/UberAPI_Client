@@ -38,8 +38,9 @@ namespace UberClient.Services
 
         public override async Task<RideModel> GetRideRequest(GetRideRequestModel request, ServerCallContext context)
         {
-            var SessionToken = context.AuthContext.PeerIdentityPropertyName; /*< \var string SessionToken */
-            _logger.LogInformation("HTTP Context User: {User}", SessionToken);
+            var SessionToken = context.AuthContext.FindPropertiesByName("token").ToString();
+
+            _logger.LogInformation($"[UberClient::RequestsService::GetRideRequest] HTTP Context session token: {SessionToken}");
 
             DistributedCacheEntryOptions options = new DistributedCacheEntryOptions() { AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(24) };
             //! Creating cacheEstimate with parameters.
@@ -81,8 +82,9 @@ namespace UberClient.Services
 
         public override async Task<RideModel> PostRideRequest(PostRideRequestModel request, ServerCallContext context)
         {
-            var SessionToken = context.AuthContext.PeerIdentityPropertyName;
-            _logger.LogInformation("HTTP Context User: {User}", SessionToken);
+            var SessionToken = context.AuthContext.FindPropertiesByName("token").ToString();
+
+            _logger.LogInformation($"[UberClient::RequestsService::PostRideRequest] HTTP Context session token: {SessionToken}");
 
             DistributedCacheEntryOptions options = new DistributedCacheEntryOptions() { AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(24)};
 
@@ -119,8 +121,9 @@ namespace UberClient.Services
 
         public override async Task<CurrencyModel> DeleteRideRequest(DeleteRideRequestModel request, ServerCallContext context) 
         {
-            var SessionToken = context.AuthContext.PeerIdentityPropertyName;
-            _logger.LogInformation("HTTP Context User: {User}", SessionToken);
+            var SessionToken = context.AuthContext.FindPropertiesByName("token").ToString();
+
+            _logger.LogInformation($"[UberClient::RequestsService::DeleteRideRequest] HTTP Context session token: {SessionToken}");
 
             var cacheEstimate = await _cache.GetAsync<EstimateCache> (request.RideId);
             string accessToken = await _accessTokenService.GetAccessTokenAsync(SessionToken, cacheEstimate.ProductId.ToString());
