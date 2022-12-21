@@ -17,7 +17,7 @@ spec:
     spec:
       initContainers:
         - name: redis-config
-          image: {{- .Values.redis.image.name -}}:{{- .Values.redis.image.tag -}}
+          image: "{{- .Values.redis.image.name -}}:{{ .Values.redis.image.tag }}"
           command:
             - sh
             - '-c'
@@ -72,11 +72,12 @@ spec:
         - name: node-config
           emptyDir: {}
         - name: certs
+          secret:
             secretName: {{ include "UberClient.fullname" . }}-redis-certificate
             optional: false
         - name: redis-config
           configMap:
-            name: lyft-redis-config
+            name: {{ include "UberClient.fullname" . }}-redis-conf
   volumeClaimTemplates:
     - metadata:
         name: lyft-redis-data
