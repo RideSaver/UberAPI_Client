@@ -92,10 +92,10 @@ redis:
   resources:
     limits:
       cpu: 100m
-      memory: 6GB
+      memory: 6Gi
     requests:
       cpu: 100m
-      memory: 4GB
+      memory: 4Gi
       storage: 500Mi
   storage:
     class: local-storage
