@@ -13,5 +13,5 @@ spec:
   dnsNames:
     - {{ include "UberClient.fullname" . }}-redis
   issuerRef:
-    name: {{- default "ridesaver-ca" .Values.certificate.ca.name -}}
-    kind: {{- default "ClusterIssuer" .Values.certificate.ca.type -}}
+    name: {{ default "ridesaver-ca" .Values.certificate.ca.name }}
+    kind: {{ default "ClusterIssuer" .Values.certificate.ca.type }}
