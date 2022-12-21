@@ -3,6 +3,16 @@ entries:
   RideSaver_Client_Uber:
   - apiVersion: v2
     appVersion: 1.16.0
+    created: "2022-12-21T09:13:03.766129856Z"
+    description: A Helm chart for Kubernetes
+    digest: dcf958278c89581dd318d840cc03593fe93c6bd464623d414a77adbd5cf19fea
+    name: RideSaver_Client_Uber
+    type: application
+    urls:
+    - https://github.com/RideSaver/UberAPI_Client/releases/download/RideSaver_Client_Uber-0.1.2/RideSaver_Client_Uber-0.1.2.tgz
+    version: 0.1.2
+  - apiVersion: v2
+    appVersion: 1.16.0
     created: "2022-12-21T08:47:34.502636677Z"
     description: A Helm chart for Kubernetes
     digest: eed7e65ed4fb09a33c2e93a468c48b454cc81dd79260494308d61b2ba6830ebb
@@ -22,4 +32,4 @@ entries:
     urls:
     - https://github.com/RideSaver/UberAPI_Client/releases/download/UberClient-0.1.1/UberClient-0.1.1.tgz
     version: 0.1.1
-generated: "2022-12-21T08:47:34.502643477Z"
+generated: "2022-12-21T09:13:03.766281754Z"
