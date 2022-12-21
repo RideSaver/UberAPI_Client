@@ -63,6 +63,7 @@ jobs:
             *.args.github_username=${{ github.actor }}
             *.args.github_token=${{ secrets.GITHUB_TOKEN }}
           push: true
+          pull: true
 
   helm:
     name: Deploy
