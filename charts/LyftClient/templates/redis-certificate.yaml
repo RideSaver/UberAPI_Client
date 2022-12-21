@@ -1,0 +1,17 @@
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: {{ include "LyftClient.fullname" . }}-redis
+  labels:
+    {{ include "LyftClient.labels" . | nindent 4 }}
+  {{ with .Values.certificate.annotations }}
+  annotations:
+    {{ toYaml . | nindent 4 }}
+  {{ end }}
+spec:
+  secretName: {{ include "LyftClient.fullname" . }}-redis-certificate
+  dnsNames:
+    - {{ include "LyftClient.fullname" . }}-redis
+  issuerRef:
+    name: {{- default "ridesaver-ca" .Values.certificate.ca.name -}}
+    kind: {{- default "ClusterIssuer" .Values.certificate.ca.type -}}
