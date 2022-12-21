@@ -1,16 +1,16 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "LyftClient.fullname" . }}
+  name: {{ include "UberClient.fullname" . }}
   labels:
-    {{- include "LyftClient.labels" . | nindent 4 }}
+    {{- include "UberClient.labels" . | nindent 4 }}
 spec:
   {{- if not .Values.autoscaling.enabled }}
   replicas: {{ .Values.replicaCount }}
   {{- end }}
   selector:
     matchLabels:
-      {{- include "LyftClient.selectorLabels" . | nindent 6 }}
+      {{- include "UberClient.selectorLabels" . | nindent 6 }}
   template:
     metadata:
       {{- with .Values.podAnnotations }}
@@ -18,13 +18,13 @@ spec:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       labels:
-        {{- include "LyftClient.selectorLabels" . | nindent 8 }}
+        {{- include "UberClient.selectorLabels" . | nindent 8 }}
     spec:
       {{- with .Values.imagePullSecrets }}
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      serviceAccountName: {{ include "LyftClient.serviceAccountName" . }}
+      serviceAccountName: {{ include "UberClient.serviceAccountName" . }}
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
       initContainers:
@@ -69,7 +69,7 @@ spec:
       volumes:
         - name: certificate
           secret:
-            secretName: {{ include "LyftClient.fullname" . }}-certificate
+            secretName: {{ include "UberClient.fullname" . }}-certificate
             optional: false
         - name: pfx-certificate
           emptyDir: {}

@@ -1,11 +1,11 @@
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
-  name: {{ include "LyftClient.fullname" . }}
+  name: {{ include "UberClient.fullname" . }}
   labels:
-    {{ include "LyftClient.labels" . | nindent 4 }}
+    {{ include "UberClient.labels" . | nindent 4 }}
 spec:
-  serviceName: {{ include "LyftClient.fullname" . }}-redis
+  serviceName: {{ include "UberClient.fullname" . }}-redis
   replicas: {{ .Values.redis.replicas }}
   selector:
     matchLabels:
@@ -13,7 +13,7 @@ spec:
   template:
     metadata:
       labels:
-        {{ include "LyftClient.selectorLabels" . | nindent 8 }}
+        {{ include "UberClient.selectorLabels" . | nindent 8 }}
     spec:
       initContainers:
         - name: redis-config
@@ -72,7 +72,7 @@ spec:
         - name: node-config
           emptyDir: {}
         - name: certs
-            secretName: {{ include "LyftClient.fullname" . }}-redis-certificate
+            secretName: {{ include "UberClient.fullname" . }}-redis-certificate
             optional: false
         - name: redis-config
           configMap:

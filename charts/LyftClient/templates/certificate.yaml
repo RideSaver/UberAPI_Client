@@ -1,19 +1,19 @@
 apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
-  name: {{ include "LyftClient.fullname" . }}
+  name: {{ include "UberClient.fullname" . }}
   labels:
-    {{ include "LyftClient.labels" . | nindent 4 }}
+    {{ include "UberClient.labels" . | nindent 4 }}
   {{ with .Values.certificate.annotations }}
   annotations:
     {{ toYaml . | nindent 4 }}
   {{ end }}
 spec:
-  secretName: {{ include "LyftClient.fullname" . }}-certificate
+  secretName: {{ include "UberClient.fullname" . }}-certificate
   dnsNames:
-    - {{ include "LyftClient.fullname" . }}
-    - {{ include "LyftClient.fullname" . }}.{{ .Release.Namespace }}
-    - {{ include "LyftClient.fullname" . }}.{{ .Release.Namespace }}.svc
+    - {{ include "UberClient.fullname" . }}
+    - {{ include "UberClient.fullname" . }}.{{ .Release.Namespace }}
+    - {{ include "UberClient.fullname" . }}.{{ .Release.Namespace }}.svc
   issuerRef:
     name: {{- default "ridesaver-ca" .Values.certificate.ca.name -}}
     kind: {{- default "ClusterIssuer" .Values.certificate.ca.type -}}
