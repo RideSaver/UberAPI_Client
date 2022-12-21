@@ -7,9 +7,11 @@ metadata:
 spec:
   type: {{ .Values.service.type }}
   ports:
-    - port: {{ .Values.service.port }}
-      targetPort: http
+    {{- range $index, $port := .Values.pizzaToppings -}}
+    - port: {{ $port.port }}
+      targetPort: {{ $index }}
       protocol: TCP
-      name: http
+      name: {{ default $index $port.name }}
+    {{- end -}}
   selector:
     {{- include "UberClient.selectorLabels" . | nindent 4 }}
