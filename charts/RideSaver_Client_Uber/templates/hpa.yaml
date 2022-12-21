@@ -17,14 +17,16 @@ spec:
     - type: Resource
       resource:
         name: cpu
-        type: {{ .Values.autoscaling.target.cpu.type }}
-        averageUtilization: {{ .Values.autoscaling.target.cpu.percentage }}
+        target:
+          type: {{ .Values.autoscaling.target.cpu.type }}
+          averageUtilization: {{ .Values.autoscaling.target.cpu.percentage }}
     {{- end }}
     {{- if .Values.autoscaling.target.memory }}
     - type: Resource
       resource:
         name: memory
-        type: {{ .Values.autoscaling.target.memory.type }}
-        averageUtilization: {{ .Values.autoscaling.target.memory.percentage }}
+        target:
+          type: {{ .Values.autoscaling.target.memory.type }}
+          averageUtilization: {{ .Values.autoscaling.target.memory.percentage }}
     {{- end }}
 {{- end }}
