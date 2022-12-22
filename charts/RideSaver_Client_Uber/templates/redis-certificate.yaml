@@ -11,7 +11,12 @@ metadata:
 spec:
   secretName: {{ include "UberClient.fullname" . }}-redis-certificate
   dnsNames:
-    - {{ include "UberClient.fullname" . }}-redis
+    - {{ include "UberClient.fullname" . }}-redis.{{ .Release.Namespace }}
+  subject:
+    organizations:
+      - RideSaver
+  usages:
+    - server auth
   issuerRef:
     name: {{ default "ridesaver-ca" .Values.certificate.ca.name }}
     kind: {{ default "ClusterIssuer" .Values.certificate.ca.type }}

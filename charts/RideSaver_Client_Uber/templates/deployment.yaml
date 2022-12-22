@@ -32,7 +32,7 @@ spec:
           command:
             - sh
             - -c
-            - "openssl pkcs12 -export -out /pfx/certificate.pfx -inkey /certs/tls.key -in /certs/tls.crt -in /certs/ca.crt -passout pass:"
+            - "openssl pkcs12 -export -out /pfx/certificate.pfx -inkey /certs/tls.key -in /certs/ca.crt -in /certs/tls.crt -passout pass:"
           volumeMounts:
             - name: certificate
               mountPath: /certs
