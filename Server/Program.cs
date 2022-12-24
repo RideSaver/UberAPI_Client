@@ -14,6 +14,7 @@ builder.Services.AddDistributedRedisCache(options =>
 
 builder.Services.AddHttpClient();
 builder.Services.AddGrpc();
+builder.Services.AddHealthChecks();
 
 builder.Services.AddTransient<IAccessTokenService, AccessTokenService>();
 
@@ -37,6 +38,7 @@ app.UseRouting();
 
 app.UseHttpsRedirection();
 app.MapControllers();
+app.MapHealthChecks("/healthz");
 
 app.UseEndpoints(endpoints =>
 {
