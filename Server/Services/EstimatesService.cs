@@ -39,7 +39,7 @@ namespace UberClient.Services
         }
         public override async Task GetEstimates(GetEstimatesRequest request, IServerStreamWriter<EstimateModel> responseStream, ServerCallContext context)
         {
-            var SessionToken = context.AuthContext.FindPropertiesByName("token").ToString();
+            var SessionToken = context.AuthContext.FindPropertiesByName("token").Value;
 
             _logger.LogInformation($"[UberClient::EstimatesService::GetEstimates] HTTP Context session token: {SessionToken}");
 
@@ -71,7 +71,7 @@ namespace UberClient.Services
                 var estimateModel = new EstimateModel()
                 {
                     EstimateId = EstimateId.ToString(),
-                    CreatedTime = Google.Protobuf.WellKnownTypes.Timestamp.FromDateTime(DateTime.Now), 
+                    CreatedTime = Google.Protobuf.WellKnownTypes.Timestamp.FromDateTime(DateTime.Now),
                     PriceDetails = new CurrencyModel
                     {
                         Price = (double)estimate.Price,
@@ -87,7 +87,7 @@ namespace UberClient.Services
                 estimateModel.WayPoints.Add(request.EndPoint);
 
                 await _cache.SetAsync(EstimateId.ToString(), new EstimateCache
-                { 
+                {
                     EstimateInfo = estimate,
                     GetEstimatesRequest = request,
                     ProductId = Guid.Parse(service)
@@ -113,7 +113,7 @@ namespace UberClient.Services
 
             // Get estimate with parameters
             _requestsApiClient.Configuration = new Configuration { AccessToken = await _accessTokenService.GetAccessTokenAsync(SessionToken, service) };
-                
+
             var estimate = EstimateInfo.FromEstimateResponse(await _requestsApiClient.RequestsEstimateAsync(new UberAPI.Client.Model.RequestsEstimateRequest()
             {
                 StartLatitude = (decimal)oldRequest.StartPoint.Latitude,
@@ -127,14 +127,14 @@ namespace UberClient.Services
             var EstimateId = DataAccess.Services.ServiceID.CreateServiceID(service);
 
             _productsApiClient.Configuration = new UberAPI.Client.Client.Configuration { AccessToken = await _accessTokenService.GetAccessTokenAsync(SessionToken, service) };
-   
+
             var product = await _productsApiClient.ProductProductIdAsync(service);
 
             // Write an InternalAPI model back
             var estimateModel = new EstimateModel()
             {
                 EstimateId = EstimateId.ToString(),
-                CreatedTime = Google.Protobuf.WellKnownTypes.Timestamp.FromDateTime(DateTime.Now), 
+                CreatedTime = Google.Protobuf.WellKnownTypes.Timestamp.FromDateTime(DateTime.Now),
                 PriceDetails = new CurrencyModel
                 {
                     Price = (double)estimate.Price,
@@ -150,7 +150,7 @@ namespace UberClient.Services
             estimateModel.WayPoints.Add(oldRequest.EndPoint);
 
             await _cache.SetAsync(EstimateId.ToString(), new EstimateCache
-            { 
+            {
                 EstimateInfo = estimate,
                 GetEstimatesRequest = oldRequest,
                 ProductId = prevEstimate.ProductId
