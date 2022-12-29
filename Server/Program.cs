@@ -30,7 +30,7 @@ builder.Services.AddGrpcClient<InternalAPI.Services.ServicesClient>(o =>
 
 builder.Services.AddGrpcClient<Users.UsersClient>(o =>
 {
-    o.Address = new Uri($"https://identity-service.api:443");
+    o.Address = new Uri($"https://identity.api:443");
 });
 
 var app = builder.Build();
