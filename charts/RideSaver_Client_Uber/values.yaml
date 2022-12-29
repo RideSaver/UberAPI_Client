@@ -5,7 +5,7 @@
 replicaCount: 1
 
 labels:
-  type: client
+  type: api-client
   service: uber
 image:
   repository: ghcr.io/ridesaver/uber_client
