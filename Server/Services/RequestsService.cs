@@ -19,16 +19,18 @@ namespace UberClient.Services
         private readonly IHttpClientFactory _clientFactory;
         private readonly IDistributedCache _cache;
         private readonly IAccessTokenService _accessTokenService;
+        private readonly IHttpContextAccessor _httpContextAccessor;
 
         private readonly RequestsApi _requestsApiClient;
         private readonly ProductsApi _productsApiClient;
         private readonly HttpClient _httpClient;
 
-        public RequestsService(ILogger<RequestsService> logger, IDistributedCache cache, IHttpClientFactory clientFactory, IAccessTokenService accessTokenService)
+        public RequestsService(ILogger<RequestsService> logger, IDistributedCache cache, IHttpClientFactory clientFactory, IAccessTokenService accessTokenService, IHttpContextAccessor httpContextAccessor)
         {
             _clientFactory = clientFactory;
             _httpClient = _clientFactory.CreateClient();
             _accessTokenService = accessTokenService;
+            _httpContextAccessor = httpContextAccessor;
 
             _logger = logger;
             _cache = cache;
