@@ -13,6 +13,7 @@ builder.Services.AddDistributedRedisCache(options =>
 });
 
 builder.Services.AddHttpClient();
+builder.Services.AddHttpContextAccessor();
 builder.Services.AddGrpc();
 builder.Services.AddHealthChecks();
 
