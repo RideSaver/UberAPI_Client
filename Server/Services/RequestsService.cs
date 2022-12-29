@@ -1,4 +1,5 @@
 using Grpc.Core;
+using Microsoft.AspNetCore.Http;
 using InternalAPI;
 using Microsoft.Extensions.Caching.Distributed;
 
@@ -38,7 +39,7 @@ namespace UberClient.Services
 
         public override async Task<RideModel> GetRideRequest(GetRideRequestModel request, ServerCallContext context)
         {
-            var SessionToken = context.AuthContext.FindPropertiesByName("token").ToString();
+            var SessionToken = "" + _httpContextAccessor.HttpContext.Request.Headers["token"];
 
             _logger.LogInformation($"[UberClient::RequestsService::GetRideRequest] HTTP Context session token: {SessionToken}");
 
@@ -82,7 +83,7 @@ namespace UberClient.Services
 
         public override async Task<RideModel> PostRideRequest(PostRideRequestModel request, ServerCallContext context)
         {
-            var SessionToken = context.AuthContext.FindPropertiesByName("token").ToString();
+            var SessionToken = "" + _httpContextAccessor.HttpContext.Request.Headers["token"];
 
             _logger.LogInformation($"[UberClient::RequestsService::PostRideRequest] HTTP Context session token: {SessionToken}");
 
@@ -101,7 +102,7 @@ namespace UberClient.Services
                 EndLatitude = (float)cacheEstimate.GetEstimatesRequest.EndPoint.Latitude,
                 EndLongitude = (float)cacheEstimate.GetEstimatesRequest.EndPoint.Longitude,
             };
-            
+
             var ride = await _requestsApiClient.CreateRequestsAsync(requests);
             cacheEstimate.RequestId = Guid.Parse(ride._RequestId);
             _=_cache.SetAsync<EstimateCache>(request.EstimateId, cacheEstimate, options);
@@ -119,9 +120,9 @@ namespace UberClient.Services
             };
         }
 
-        public override async Task<CurrencyModel> DeleteRideRequest(DeleteRideRequestModel request, ServerCallContext context) 
+        public override async Task<CurrencyModel> DeleteRideRequest(DeleteRideRequestModel request, ServerCallContext context)
         {
-            var SessionToken = context.AuthContext.FindPropertiesByName("token").ToString();
+            var SessionToken = "" + _httpContextAccessor.HttpContext.Request.Headers["token"];
 
             _logger.LogInformation($"[UberClient::RequestsService::DeleteRideRequest] HTTP Context session token: {SessionToken}");
 

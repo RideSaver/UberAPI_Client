@@ -1,4 +1,5 @@
 using Grpc.Core;
+using Microsoft.AspNetCore.Http;
 using InternalAPI;
 using Microsoft.Extensions.Caching.Distributed;
 
@@ -20,16 +21,18 @@ namespace UberClient.Services
         private readonly IHttpClientFactory _clientFactory;
         private readonly IDistributedCache _cache;
         private readonly IAccessTokenService _accessTokenService;
+        private readonly IHttpContextAccessor _httpContextAccessor;
 
         private readonly RequestsApi _requestsApiClient;
         private readonly ProductsApi _productsApiClient;
         private readonly HttpClient _httpClient;
 
-        public EstimatesService(ILogger<EstimatesService> logger, IDistributedCache cache, IHttpClientFactory clientFactory, IAccessTokenService accessTokenService)
+        public EstimatesService(ILogger<EstimatesService> logger, IDistributedCache cache, IHttpClientFactory clientFactory, IAccessTokenService accessTokenService, IHttpContextAccessor httpContextAccessor)
         {
             _clientFactory= clientFactory;
             _httpClient = _clientFactory.CreateClient();
             _accessTokenService = accessTokenService;
+            _httpContextAccessor = httpContextAccessor;
 
             _logger = logger;
             _cache = cache;
@@ -39,7 +42,7 @@ namespace UberClient.Services
         }
         public override async Task GetEstimates(GetEstimatesRequest request, IServerStreamWriter<EstimateModel> responseStream, ServerCallContext context)
         {
-            var SessionToken = context.AuthContext.FindPropertiesByName("token").Value;
+            var SessionToken = "" + _httpContextAccessor.HttpContext.Request.Headers["token"];
 
             _logger.LogInformation($"[UberClient::EstimatesService::GetEstimates] HTTP Context session token: {SessionToken}");
 
@@ -99,7 +102,7 @@ namespace UberClient.Services
 
         public override async Task<EstimateModel> GetEstimateRefresh(GetEstimateRefreshRequest request, ServerCallContext context)
         {
-            var SessionToken = context.AuthContext.FindPropertiesByName("token").ToString();
+            var SessionToken = "" + _httpContextAccessor.HttpContext.Request.Headers["token"];
 
             _logger.LogInformation($"[UberClient::EstimatesService::GetEstimateRefresh] HTTP Context session token : {SessionToken}");
 
