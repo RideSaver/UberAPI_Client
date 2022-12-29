@@ -11,7 +11,7 @@ namespace UberClient.Services
         {
             var headers = new Metadata
             {
-                { "token", $"{SessionToken}" }
+                { "Authorization", $"bearer {SessionToken}" }
             };
 
             var AccessTokenResponse = await _client.GetUserAccessTokenAsync(new GetUserAccessTokenRequest { ServiceId = ServiceId }, headers);
