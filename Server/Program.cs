@@ -47,4 +47,6 @@ app.UseEndpoints(endpoints =>
     endpoints.MapGrpcService<RequestsService>();
 });
 
+appLifetime.ApplicationStarted.Register(Services.ServicesService.ServicesService.Register);
+
 app.Run();

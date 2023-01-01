@@ -51,5 +51,9 @@ namespace Services.ServicesService
             _services.RegisterService(request);
             request.Features.Clear();
         }
+
+        public static void Register() {
+            var a = new ServicesService();
+        }
     }
 }
