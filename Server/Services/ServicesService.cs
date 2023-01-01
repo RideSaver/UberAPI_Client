@@ -7,9 +7,9 @@ namespace Services.ServicesService
     public class ServicesService : InternalAPI.Services.ServicesClient
     {
         private readonly InternalAPI.Services.ServicesClient _services;
-        private readonly ILogger<ServicesService> _logger;
+        private readonly ILogger _logger;
 
-        public ServicesService(InternalAPI.Services.ServicesClient services, ILogger<ServicesService> logger)
+        public ServicesService(InternalAPI.Services.ServicesClient services, ILogger logger)
         {
             _services = services;
             _logger = logger;
@@ -56,7 +56,7 @@ namespace Services.ServicesService
         public static void Register(ILogger logger) {
             var channel = GrpcChannel.ForAddress($"https://services.api:443");
             var client = new InternalAPI.Services.ServicesClient(channel);
-            var runner = new ServicesService(client, (ILogger<ServicesService>)logger);
+            var runner = new ServicesService(client, logger);
         }
     }
 }
