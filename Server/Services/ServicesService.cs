@@ -1,4 +1,5 @@
 using InternalAPI;
+using Grpc.Core;
 using ByteString = Google.Protobuf.ByteString;
 
 namespace Services.ServicesService
@@ -54,7 +55,7 @@ namespace Services.ServicesService
 
         public static void Register() {
             var channel = GrpcChannel.ForAddress($"https://services.api:443");
-            var client = new Services.ServicesClient(channel);
+            var client = new InternalAPI.Services.ServicesClient(channel);
             var runner = new ServicesService(client);
         }
     }
