@@ -53,7 +53,9 @@ namespace Services.ServicesService
         }
 
         public static void Register() {
-            var a = new ServicesService();
+            var channel = GrpcChannel.ForAddress($"https://services.api:443");
+            var client = new Services.ServicesClient(channel);
+            var runner = new ServicesService(client);
         }
     }
 }
