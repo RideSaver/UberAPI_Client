@@ -11,12 +11,12 @@ namespace UberClient.Services
         {
             var headers = new Metadata
             {
-                { "Authorization", $"bearer {SessionToken}" }
+                { "Authorization", $"Bearer {SessionToken}" }
             };
 
             var AccessTokenResponse = await _client.GetUserAccessTokenAsync(new GetUserAccessTokenRequest { ServiceId = ServiceId }, headers);
 
-            if (AccessTokenResponse is null) return null;
+            if (AccessTokenResponse is null) return String.Empty;
 
             return AccessTokenResponse.AccessToken;
         }
