@@ -29,7 +29,7 @@ namespace Services.ServicesService
 
             requestUB.Features.Add(ServiceFeatures.ProfessionalDriver);
             _logger.LogDebug("[UberClient::ServicesService::RegisterServiceRequest] Registering [UberBLACK] service...");
-            await _services.RegisterServiceAsync(requestUB);
+            var replyUB = await _services.RegisterServiceAsync(requestUB);
 
             var requestUP = new RegisterServiceRequest
             {
@@ -40,7 +40,7 @@ namespace Services.ServicesService
 
             requestUP.Features.Add(ServiceFeatures.Shared);
             _logger.LogDebug("[UberClient::ServicesService::RegisterServiceRequest] Registering [UberPOOL] service...");
-            await _services.RegisterServiceAsync(requestUP);
+            var replyUP = await _services.RegisterServiceAsync(requestUP);
 
             var requestUX = new RegisterServiceRequest
             {
@@ -51,7 +51,7 @@ namespace Services.ServicesService
 
             requestUX.Features.Add(ServiceFeatures.ProfessionalDriver);
             _logger.LogDebug("[UberClient::ServicesService::RegisterServiceRequest] Registering [UberX] service...");
-            await _services.RegisterServiceAsync(requestUX);
+            var replyUX = await _services.RegisterServiceAsync(requestUX);
 
             _logger.LogInformation("[UberClient::ServicesService::RegisterServiceRequest] Services Registeration complete.");
         }
