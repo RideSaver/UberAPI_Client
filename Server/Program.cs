@@ -20,7 +20,7 @@ builder.Services.AddGrpc();
 builder.Services.AddHealthChecks();
 
 builder.Services.AddTransient<IAccessTokenService, AccessTokenService>();
-builder.Services.AddTransient<IServicesService, ServicesService>();
+builder.Services.AddSingleton<IServicesService, ServicesService>();
 
 builder.Services.Configure<ListenOptions>(options =>
 {
