@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Server.Kestrel.Core;
 using System.Security.Cryptography.X509Certificates;
 using InternalAPI;
 using Grpc.Core;
+using Services.ServicesService;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -19,6 +20,7 @@ builder.Services.AddGrpc();
 builder.Services.AddHealthChecks();
 
 builder.Services.AddTransient<IAccessTokenService, AccessTokenService>();
+builder.Services.AddTransient<IServicesService, ServicesService>();
 
 builder.Services.Configure<ListenOptions>(options =>
 {
