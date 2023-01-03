@@ -14,7 +14,6 @@ namespace Services.ServicesService
         {
             _services = services;
             _logger = logger;
-            RegisterServiceRequest();
         }
 
         public void RegisterServiceRequest()
