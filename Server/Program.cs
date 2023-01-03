@@ -2,6 +2,7 @@ using UberClient.Services;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
 using System.Security.Cryptography.X509Certificates;
 using InternalAPI;
+using Grpc.Core;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -26,7 +27,17 @@ builder.Services.Configure<ListenOptions>(options =>
 
 builder.Services.AddGrpcClient<InternalAPI.Services.ServicesClient>(o =>
 {
+    var credentials = CallCredentials.FromInterceptor((context, metadata) =>
+    {
+        metadata.Add("Authorization", $"token"); // Unused for now
+        return Task.CompletedTask;
+    });
+
+    var httpHandler = new HttpClientHandler();
+    httpHandler.ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator;
     o.Address = new Uri($"https://services.api:443");
+    o.ChannelOptionsActions.Add(o => o.HttpHandler = httpHandler);
+    o.CallOptionsActions.Add(o => o.CallOptions.WithCredentials(credentials));
 });
 
 builder.Services.AddGrpcClient<Users.UsersClient>(o =>
@@ -47,6 +58,6 @@ app.UseEndpoints(endpoints =>
     endpoints.MapGrpcService<RequestsService>();
 });
 
-app.Lifetime.ApplicationStarted.Register(() => Services.ServicesService.ServicesService.Register(app.Logger));
+//app.Lifetime.ApplicationStarted.Register(() => Services.ServicesService.ServicesService.Register(app.Logger));
 
 app.Run();
