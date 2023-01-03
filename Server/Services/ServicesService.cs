@@ -5,7 +5,7 @@ using UberClient.Services;
 
 namespace Services.ServicesService
 {
-    public class ServicesService : InternalAPI.Services.ServicesClient , IServicesService
+    public class ServicesService : InternalAPI.Services.ServicesClient , IServicesService , IHostedService
     {
         private readonly InternalAPI.Services.ServicesClient _services;
         private readonly ILogger<ServicesService> _logger;
@@ -16,7 +16,7 @@ namespace Services.ServicesService
             _logger = logger;
         }
 
-        public void RegisterServiceRequest()
+        public async Task RegisterServiceRequest()
         {
             _logger.LogInformation("[UberClient::ServicesService::RegisterServiceRequest] Registering services...");
 
@@ -29,7 +29,7 @@ namespace Services.ServicesService
 
             requestUB.Features.Add(ServiceFeatures.ProfessionalDriver);
             _logger.LogDebug("[UberClient::ServicesService::RegisterServiceRequest] Registering [UberBLACK] service...");
-            _services.RegisterService(requestUB);
+            await _services.RegisterServiceAsync(requestUB);
 
             var requestUP = new RegisterServiceRequest
             {
@@ -40,7 +40,7 @@ namespace Services.ServicesService
 
             requestUP.Features.Add(ServiceFeatures.Shared);
             _logger.LogDebug("[UberClient::ServicesService::RegisterServiceRequest] Registering [UberPOOL] service...");
-            _services.RegisterService(requestUP);
+            await _services.RegisterServiceAsync(requestUP);
 
             var requestUX = new RegisterServiceRequest
             {
@@ -51,15 +51,19 @@ namespace Services.ServicesService
 
             requestUX.Features.Add(ServiceFeatures.ProfessionalDriver);
             _logger.LogDebug("[UberClient::ServicesService::RegisterServiceRequest] Registering [UberX] service...");
-            _services.RegisterService(requestUX);
+            await _services.RegisterServiceAsync(requestUX);
 
             _logger.LogInformation("[UberClient::ServicesService::RegisterServiceRequest] Services Registeration complete.");
         }
 
-        /*public static void Register(ILogger logger) {
-            var channel = GrpcChannel.ForAddress($"https://services.api:443");
-            var client = new InternalAPI.Services.ServicesClient(channel);
-            var runner = new ServicesService(client, logger);
-        }*/
+        public async Task StartAsync(CancellationToken cancellationToken)
+        {
+            await RegisterServiceRequest();
+        }
+
+        public Task StopAsync(CancellationToken cancellationToken)
+        {
+            return Task.CompletedTask;
+        }
     }
 }

@@ -22,6 +22,8 @@ builder.Services.AddHealthChecks();
 builder.Services.AddTransient<IAccessTokenService, AccessTokenService>();
 builder.Services.AddSingleton<IServicesService, ServicesService>();
 
+builder.Services.AddHostedService<ServicesService>();
+
 builder.Services.Configure<ListenOptions>(options =>
 {
     options.UseHttps(new X509Certificate2(Path.Combine("/certs/tls.crt"), Path.Combine("/certs/tls.key")));
@@ -52,7 +54,7 @@ app.UseEndpoints(endpoints =>
     endpoints.MapGrpcService<RequestsService>();
 });
 
-app.Services.GetService<ServicesService>().RegisterServiceRequest();
+
 
 //app.Lifetime.ApplicationStarted.Register(() => Services.ServicesService.ServicesService.Register(app.Logger));
 
