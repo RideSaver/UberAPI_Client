@@ -9,7 +9,6 @@
     <ProjectReference Include="../build/csharp-netcore/src/UberAPI.Client/UberAPI.Client.csproj" />
     <PackageReference Include="Google.Protobuf" Version="3.21.11" />
     <PackageReference Include="Grpc.AspNetCore" Version="2.50.0" />
-    <PackageReference Include="Grpc.Core" Version="2.46.5" />
     <PackageReference Include="Microsoft.AspNet.WebApi" Version="5.2.9" />
     <PackageReference Include="Microsoft.Bot.Schema" Version="4.18.1" />
     <PackageReference Include="Microsoft.Extensions.ApiDescription.Client" Version="7.0.0">
@@ -26,7 +25,7 @@
     <PackageReference Include="Newtonsoft.Json" Version="13.0.2" />
     <PackageReference Include="System.ComponentModel.Annotations" Version="5.0.0" />
   </ItemGroup>
-    
+
   <ItemGroup>
     <Reference Include="UberAPI.Client">
       <HintPath>..\build\csharp-netcore\src\UberAPI.Client\obj\Release\net6.0\UberAPI.Client.dll</HintPath>
