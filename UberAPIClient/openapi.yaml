@@ -437,11 +437,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/RequestEstimateResponse"
 components:
-  securitySchemes:
-    apikey:
-      type: apiKey
-      name: server_token
-      in: query
   schemas:
     RequestEstimateResponse:
       oneOf:
