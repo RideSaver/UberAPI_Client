@@ -2,7 +2,6 @@ using UberClient.Services;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
 using System.Security.Cryptography.X509Certificates;
 using InternalAPI;
-using Grpc.Core;
 using Services.ServicesService;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -53,9 +52,5 @@ app.UseEndpoints(endpoints =>
     endpoints.MapGrpcService<EstimatesService>();
     endpoints.MapGrpcService<RequestsService>();
 });
-
-
-
-//app.Lifetime.ApplicationStarted.Register(() => Services.ServicesService.ServicesService.Register(app.Logger));
 
 app.Run();

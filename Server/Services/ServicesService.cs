@@ -38,15 +38,15 @@ namespace Services.ServicesService
         {
             _logger.LogInformation("[UberClient::ServicesService::RegisterServiceRequest] Registering services...");
 
-            RegisterService("d4abaae7-f4d6-4152-91cc-77523e8165a4", "UberBlack", new List<ServiceFeatures>{
+            await RegisterService("d4abaae7-f4d6-4152-91cc-77523e8165a4", "UberBlack", new List<ServiceFeatures>{
                 ServiceFeatures.ProfessionalDriver
             });
 
-            RegisterService("26546650-e557-4a7b-86e7-6a3942445247", "UberPOOL", new List<ServiceFeatures>{
+            await RegisterService("26546650-e557-4a7b-86e7-6a3942445247", "UberPOOL", new List<ServiceFeatures>{
                 ServiceFeatures.Shared
             });
 
-            RegisterService("2d1d002b-d4d0-4411-98e1-673b244878b2", "UberX", new List<ServiceFeatures>{
+            await RegisterService("2d1d002b-d4d0-4411-98e1-673b244878b2", "UberX", new List<ServiceFeatures>{
                 ServiceFeatures.ProfessionalDriver
             });
 
