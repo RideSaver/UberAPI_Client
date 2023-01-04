@@ -4,7 +4,7 @@ info:
   description: Uber Mock Api Specification
   version: "1.0"
 servers:
-  - url: https://api.uber.com/v1.2
+  - url: https://uber.mock:443
 paths:
   /products:
     get:
