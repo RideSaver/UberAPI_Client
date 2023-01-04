@@ -330,8 +330,6 @@ paths:
       responses:
         '204':
           description: No Content
-        '401':
-          description: Invalid OAuth 2.0 credentials provided.
         '404':
           description: The provided request ID doesn’t exist.
         '422':
