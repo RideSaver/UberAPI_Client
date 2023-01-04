@@ -61,11 +61,13 @@ spec:
           livenessProbe:
             httpGet:
               path: /healthz
-              port: http
+              port: https
+              scheme: HTTPS
           readinessProbe:
             httpGet:
               path: /healthz
-              port: http
+              port: https
+              scheme: HTTPS
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
           volumeMounts:
