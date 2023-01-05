@@ -102,7 +102,7 @@ namespace UberClient.Services
                 var estimateModel = new EstimateModel()
                 {
                     EstimateId = estimateResponseId,
-                    CreatedTime = Google.Protobuf.WellKnownTypes.Timestamp.FromDateTime(DateTime.Now),
+                    CreatedTime = Google.Protobuf.WellKnownTypes.Timestamp.FromDateTime(DateTime.UtcNow),
                     PriceDetails = new CurrencyModel
                     {
                         Price = (double)estimateResponse.Price,
