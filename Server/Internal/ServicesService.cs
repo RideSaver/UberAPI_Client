@@ -1,11 +1,11 @@
 using InternalAPI;
 using Grpc.Net.Client;
 using ByteString = Google.Protobuf.ByteString;
-using UberClient.Services;
+using UberClient.Interface;
 
-namespace Services.ServicesService
+namespace UberClient.Internal
 {
-    public class ServicesService : InternalAPI.Services.ServicesClient , IServicesService , IHostedService
+    public class ServicesService : InternalAPI.Services.ServicesClient, IServicesService, IHostedService
     {
         private readonly InternalAPI.Services.ServicesClient _services;
         private readonly ILogger<ServicesService> _logger;

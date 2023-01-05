@@ -1,4 +1,4 @@
-namespace UberClient.Services
+namespace UberClient.Interface
 {
     public interface IAccessTokenService
     {

@@ -2,15 +2,13 @@ using Grpc.Core;
 using Microsoft.AspNetCore.Http;
 using InternalAPI;
 using Microsoft.Extensions.Caching.Distributed;
-
-using UberClient.Server.Extensions.Cache;
 using UberClient.Models;
 
 using RequestsApi = UberAPI.Client.Api.RequestsApi;
 using ProductsApi = UberAPI.Client.Api.ProductsApi;
 using Configuration = UberAPI.Client.Client.Configuration;
 using System.Net.Http;
-
+using UberClient.Extensions;
 
 namespace UberClient.Services
 {

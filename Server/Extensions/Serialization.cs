@@ -1,6 +1,7 @@
 using System.IO;
 using System.Runtime.Serialization.Formatters.Binary;
-namespace UberClient.Server.Extensions.Cache
+
+namespace UberClient.Extensions
 {
     public static class Serialization
     {
@@ -21,7 +22,7 @@ namespace UberClient.Server.Extensions.Cache
         {
             if (byteArray == null)
             {
-                return default(T);
+                return default;
             }
             BinaryFormatter binaryFormatter = new BinaryFormatter();
             using (MemoryStream memoryStream = new MemoryStream(byteArray))

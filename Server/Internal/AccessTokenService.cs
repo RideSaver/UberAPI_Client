@@ -1,7 +1,8 @@
 using Grpc.Core;
 using InternalAPI;
+using UberClient.Interface;
 
-namespace UberClient.Services
+namespace UberClient.Internal
 {
     public class AccessTokenService : IAccessTokenService
     {
@@ -16,7 +17,7 @@ namespace UberClient.Services
 
             var AccessTokenResponse = await _client.GetUserAccessTokenAsync(new GetUserAccessTokenRequest { ServiceId = ServiceId }, headers);
 
-            if (AccessTokenResponse is null) return String.Empty;
+            if (AccessTokenResponse is null) return string.Empty;
 
             return AccessTokenResponse.AccessToken;
         }
