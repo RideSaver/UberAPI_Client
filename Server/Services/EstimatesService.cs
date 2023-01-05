@@ -38,8 +38,8 @@ namespace UberClient.Services
             _logger = logger;
             _cache = cache;
 
-            _requestsApiClient = new RequestsApi(_httpClient, new Configuration {});
-            _productsApiClient = new ProductsApi(_httpClient, new Configuration {});
+            _requestsApiClient = new RequestsApi();
+            _productsApiClient = new ProductsApi();
         }
         public override async Task GetEstimates(GetEstimatesRequest request, IServerStreamWriter<EstimateModel> responseStream, ServerCallContext context)
         {

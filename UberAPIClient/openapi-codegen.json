@@ -5,6 +5,5 @@
     "packageAuthors": "RideSaver",
     "buildTarget": "library",
     "targetFramework": "net6.0",
-    "library": "httpclient",
     "useDateTimeOffset": true
 }

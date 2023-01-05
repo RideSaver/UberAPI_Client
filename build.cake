@@ -38,7 +38,8 @@ Task("Generate:OpenAPI")
     OpenApiGenerator.Generate("UberAPIClient/openapi.yaml", generator, $"{output_dir}", new OpenApiGenerateSettings()
     {
         ConfigurationFile = "UberAPIClient/openapi-codegen.json",
-        PackageName = packageName
+        PackageName = packageName,
+        TemplateDirectory = "./UberAPIClient/template",
     });
 });
 
