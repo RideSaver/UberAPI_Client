@@ -9,6 +9,7 @@ using DataAccess.Services;
 using RequestsApi = UberAPI.Client.Api.RequestsApi;
 using ProductsApi = UberAPI.Client.Api.ProductsApi;
 using Configuration = UberAPI.Client.Client.Configuration;
+using UberAPI.Client.Model;
 
 namespace UberClient.Services
 {
@@ -45,6 +46,7 @@ namespace UberClient.Services
             //----------------------------------------------------------[DEBUG]---------------------------------------------------------------//
             _logger.LogInformation($"[UberClient::EstimatesService::GetEstimates] HTTP Context session token: {SessionToken}");
             _logger.LogInformation($"[UberClient::EstimatesService::GetEstimates] Request: START: {request.StartPoint} END: {request.EndPoint}");
+
             foreach (var service in request.Services)
             {
                 _logger.LogInformation($"[UberClient::EstimatesService::GetEstimates] Request: SERVICE ID: {service}");
@@ -66,33 +68,45 @@ namespace UberClient.Services
                     continue;
                 }
 
-                var estimate = EstimateInfo.FromEstimateResponse(await _requestsApiClient.RequestsEstimateAsync(new UberAPI.Client.Model.RequestsEstimateRequest
+                RequestsEstimateRequest requestInstance = new()
                 {
+                    ProductId = service.ToString().Replace("-", string.Empty),
                     StartLatitude = (decimal)request.StartPoint.Latitude,
                     StartLongitude = (decimal)request.StartPoint.Longitude,
+                    StartPlaceId = "startID",
                     EndLatitude = (decimal)request.EndPoint.Latitude,
                     EndLongitude = (decimal)request.EndPoint.Longitude,
-                    SeatCount = request.Seats,
-                    ProductId = service.ToString().Replace("-", string.Empty)
-                }));
+                    EndPlaceId = "endID",
+                    SeatCount = request.Seats
+                };
 
-                var EstimateId = ServiceID.CreateServiceID(service);
+                var estimateResponse = EstimateInfo.FromEstimateResponse(await _requestsApiClient.RequestsEstimateAsync(requestInstance));
+
+                _logger.LogInformation("[UberClient::EstimatesService::GetEstimates] RequestsEstimate API call successfuully finished.");
+
+                var estimateResponseId = ServiceID.CreateServiceID(service).ToString();
+
+                _logger.LogInformation($"[UberClient::EstimatesService::GetEstimates] Generated Estimate ID: {estimateResponseId}");
 
                 _productsApiClient.Configuration = new Configuration { AccessToken = await _accessTokenService.GetAccessTokenAsync(SessionToken, service) };
 
-                var product = await _productsApiClient.ProductProductIdAsync(service);
+                _logger.LogInformation($"[UberClient::EstimatesService::GetEstimates] Invoking GetProduct API endpoint...");
+
+                var product = await _productsApiClient.ProductProductIdAsync(requestInstance.ProductId);
+
+                _logger.LogInformation("[UberClient::EstimatesService::GetEstimates] GetProduct API call successfuully finished.");
 
                 // Write an InternalAPI model back
                 var estimateModel = new EstimateModel()
                 {
-                    EstimateId = EstimateId.ToString(),
+                    EstimateId = estimateResponseId,
                     CreatedTime = Google.Protobuf.WellKnownTypes.Timestamp.FromDateTime(DateTime.Now),
                     PriceDetails = new CurrencyModel
                     {
-                        Price = (double)estimate.Price,
-                        Currency = estimate.Currency,
+                        Price = (double)estimateResponse.Price,
+                        Currency = estimateResponse.Currency,
                     },
-                    Distance = (int)estimate.Distance,
+                    Distance = estimateResponse.Distance,
                     Seats = product.Shared ? request.Seats : product.Capacity,
                     //RequestUrl = $"https://m.uber.com/ul/?client_id={clientId}&action=setPickup&pickup[latitude]={request.StartPoint.Latitude}&pickup[longitude]={request.StartPoint.Longitude}&dropoff[latitude]={request.EndPoint.Latitude}&dropoff[longitude]={request.EndPoint.Longitude}&product_id={service}",
                     DisplayName = product.DisplayName,
@@ -101,11 +115,11 @@ namespace UberClient.Services
                 estimateModel.WayPoints.Add(request.StartPoint);
                 estimateModel.WayPoints.Add(request.EndPoint);
 
-                await _cache.SetAsync(EstimateId.ToString(), new EstimateCache
+                await _cache.SetAsync(estimateResponseId, new EstimateCache
                 {
-                    EstimateInfo = estimate,
+                    EstimateInfo = estimateResponse,
                     GetEstimatesRequest = request,
-                    ProductId = Guid.Parse(service)
+                    ProductId = Guid.Parse(estimateResponseId)
                 }, options);
 
                 await responseStream.WriteAsync(estimateModel);
@@ -137,7 +151,7 @@ namespace UberClient.Services
                 ProductId = service
             }));
 
-            var EstimateId = DataAccess.Services.ServiceID.CreateServiceID(service);
+            var EstimateId = ServiceID.CreateServiceID(service);
 
             _productsApiClient.Configuration = new Configuration { AccessToken = await _accessTokenService.GetAccessTokenAsync(SessionToken, service) };
 
