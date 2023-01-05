@@ -58,7 +58,7 @@ namespace UberClient.Services
                     EndLatitude = (decimal)request.EndPoint.Latitude,
                     EndLongitude = (decimal)request.EndPoint.Longitude,
                     SeatCount = request.Seats,
-                    ProductId = service
+                    ProductId = service.ToString()
                 }));
 
                 var EstimateId = DataAccess.Services.ServiceID.CreateServiceID(service);
