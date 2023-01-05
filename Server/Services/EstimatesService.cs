@@ -9,6 +9,7 @@ using ProductsApi = UberAPI.Client.Api.ProductsApi;
 using Configuration = UberAPI.Client.Client.Configuration;
 using System.Net.Http;
 using UberClient.Extensions;
+using UberClient.Interface;
 
 namespace UberClient.Services
 {
@@ -40,18 +41,16 @@ namespace UberClient.Services
         }
         public override async Task GetEstimates(GetEstimatesRequest request, IServerStreamWriter<EstimateModel> responseStream, ServerCallContext context)
         {
-            var SessionToken = "" + _httpContextAccessor.HttpContext.Request.Headers["token"];
+            var SessionToken = "" + _httpContextAccessor.HttpContext!.Request.Headers["token"];
 
             _logger.LogInformation($"[UberClient::EstimatesService::GetEstimates] HTTP Context session token: {SessionToken}");
 
-            string clientId = "al0I63Gjwk3Wsmhq_EL8_HxB8qWlO7yY";
             DistributedCacheEntryOptions options = new DistributedCacheEntryOptions() { AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(24)};
-            // Loop through all the services in the request
+
             foreach (var service in request.Services)
             {
                 _requestsApiClient.Configuration = new Configuration { AccessToken = await _accessTokenService.GetAccessTokenAsync(SessionToken, service) };
 
-                // Get estimate with parameters
                 var estimate = EstimateInfo.FromEstimateResponse(await _requestsApiClient.RequestsEstimateAsync(new UberAPI.Client.Model.RequestsEstimateRequest
                 {
                     StartLatitude = (decimal)request.StartPoint.Latitude,
@@ -100,11 +99,9 @@ namespace UberClient.Services
 
         public override async Task<EstimateModel> GetEstimateRefresh(GetEstimateRefreshRequest request, ServerCallContext context)
         {
-            var SessionToken = "" + _httpContextAccessor.HttpContext.Request.Headers["token"];
+            var SessionToken = "" + _httpContextAccessor.HttpContext!.Request.Headers["token"];
 
             _logger.LogInformation($"[UberClient::EstimatesService::GetEstimateRefresh] HTTP Context session token : {SessionToken}");
-
-            string clientId = "al0I63Gjwk3Wsmhq_EL8_HxB8qWlO7yY";
 
             DistributedCacheEntryOptions options = new DistributedCacheEntryOptions() { AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(24) };
 
@@ -127,7 +124,7 @@ namespace UberClient.Services
 
             var EstimateId = DataAccess.Services.ServiceID.CreateServiceID(service);
 
-            _productsApiClient.Configuration = new UberAPI.Client.Client.Configuration { AccessToken = await _accessTokenService.GetAccessTokenAsync(SessionToken, service) };
+            _productsApiClient.Configuration = new Configuration { AccessToken = await _accessTokenService.GetAccessTokenAsync(SessionToken, service) };
 
             var product = await _productsApiClient.ProductProductIdAsync(service);
 
