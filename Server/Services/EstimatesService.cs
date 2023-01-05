@@ -82,8 +82,7 @@ namespace UberClient.Services
                     SeatCount = request.Seats
                 };
 
-                var response = await _requestsApiClient.RequestsEstimateAsync(requestInstance);
-                var estimateResponse = EstimateInfo.FromEstimateResponse(RequestEstimateResponse.FromJson(response.ToJson()));
+                var estimateResponse = EstimateInfo.FromEstimateResponse(await _requestsApiClient.RequestsEstimateAsync(requestInstance));
 
                 _logger.LogInformation("[UberClient::EstimatesService::GetEstimates] RequestsEstimate API call successfuully finished.");
 
