@@ -4,6 +4,8 @@ using System.Security.Cryptography.X509Certificates;
 using InternalAPI;
 using UberClient.Interface;
 using UberClient.Internal;
+using UberClient.Filters;
+using Microsoft.ApplicationInsights.Extensibility;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -21,6 +23,7 @@ builder.Services.AddHealthChecks();
 
 builder.Services.AddTransient<IAccessTokenService, AccessTokenService>();
 builder.Services.AddSingleton<IServicesService, ServicesService>();
+builder.Services.AddSingleton<ITelemetryInitializer, FilterHealthchecksTelemetryInitializer>();
 
 builder.Services.AddHostedService<ServicesService>();
 
