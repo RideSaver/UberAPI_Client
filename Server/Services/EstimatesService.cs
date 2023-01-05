@@ -10,6 +10,7 @@ using Configuration = UberAPI.Client.Client.Configuration;
 using System.Net.Http;
 using UberClient.Extensions;
 using UberClient.Interface;
+using DataAccess.Services;
 
 namespace UberClient.Services
 {
@@ -43,13 +44,29 @@ namespace UberClient.Services
         {
             var SessionToken = "" + _httpContextAccessor.HttpContext!.Request.Headers["token"];
 
+            //----------------------------------------------------------[DEBUG]---------------------------------------------------------------//
             _logger.LogInformation($"[UberClient::EstimatesService::GetEstimates] HTTP Context session token: {SessionToken}");
+            _logger.LogInformation($"[UberClient::EstimatesService::GetEstimates] Request: START: {request.StartPoint} END: {request.EndPoint}");
+            foreach (var service in request.Services)
+            {
+                _logger.LogInformation($"[UberClient::EstimatesService::GetEstimates] Request: SERVICE ID: {service}");
+                _logger.LogInformation($"[UberClient::EstimatesService::GetEstimates] Request: SERVICE ID (ToString): {service.ToString().Replace("-", string.Empty)}");
+            }
+            //--------------------------------------------------------------------------------------------------------------------------------//
 
             DistributedCacheEntryOptions options = new DistributedCacheEntryOptions() { AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(24)};
 
             foreach (var service in request.Services)
             {
-                _requestsApiClient.Configuration = new Configuration { AccessToken = await _accessTokenService.GetAccessTokenAsync(SessionToken, service) };
+                if (service is null) continue;
+
+                _requestsApiClient.Configuration = new Configuration { AccessToken = await _accessTokenService.GetAccessTokenAsync(SessionToken, service.ToString()) };
+
+                if (_requestsApiClient.Configuration.AccessToken is null)
+                {
+                    _logger.LogInformation("[UberClient::EstimatesService::GetEstimates] AccessToken is null.");
+                    continue;
+                }
 
                 var estimate = EstimateInfo.FromEstimateResponse(await _requestsApiClient.RequestsEstimateAsync(new UberAPI.Client.Model.RequestsEstimateRequest
                 {
@@ -58,10 +75,10 @@ namespace UberClient.Services
                     EndLatitude = (decimal)request.EndPoint.Latitude,
                     EndLongitude = (decimal)request.EndPoint.Longitude,
                     SeatCount = request.Seats,
-                    ProductId = service.ToString()
+                    ProductId = service.ToString().Replace("-", string.Empty)
                 }));
 
-                var EstimateId = DataAccess.Services.ServiceID.CreateServiceID(service);
+                var EstimateId = ServiceID.CreateServiceID(service);
 
                 _productsApiClient.Configuration = new Configuration { AccessToken = await _accessTokenService.GetAccessTokenAsync(SessionToken, service) };
 
