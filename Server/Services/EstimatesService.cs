@@ -1,16 +1,14 @@
 using Grpc.Core;
-using Microsoft.AspNetCore.Http;
 using InternalAPI;
 using Microsoft.Extensions.Caching.Distributed;
 using UberClient.Models;
+using UberClient.Extensions;
+using UberClient.Interface;
+using DataAccess.Services;
 
 using RequestsApi = UberAPI.Client.Api.RequestsApi;
 using ProductsApi = UberAPI.Client.Api.ProductsApi;
 using Configuration = UberAPI.Client.Client.Configuration;
-using System.Net.Http;
-using UberClient.Extensions;
-using UberClient.Interface;
-using DataAccess.Services;
 
 namespace UberClient.Services
 {
@@ -37,7 +35,7 @@ namespace UberClient.Services
             _logger = logger;
             _cache = cache;
 
-            _requestsApiClient = new RequestsApi(_httpClient, new Configuration { });
+            _requestsApiClient = new RequestsApi(_httpClient, new Configuration {});
             _productsApiClient = new ProductsApi(_httpClient, new Configuration {});
         }
         public override async Task GetEstimates(GetEstimatesRequest request, IServerStreamWriter<EstimateModel> responseStream, ServerCallContext context)
