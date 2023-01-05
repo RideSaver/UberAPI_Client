@@ -43,6 +43,7 @@ namespace UberClient.Services
         }
         public override async Task GetEstimates(GetEstimatesRequest request, IServerStreamWriter<EstimateModel> responseStream, ServerCallContext context)
         {
+            string clientId = "al0I63Gjwk3Wsmhq_EL8_HxB8qWlO7yY";
             var SessionToken = "" + _httpContextAccessor.HttpContext!.Request.Headers["token"];
 
             //----------------------------------------------------------[DEBUG]---------------------------------------------------------------//
@@ -103,6 +104,7 @@ namespace UberClient.Services
                 {
                     EstimateId = estimateResponseId,
                     CreatedTime = Google.Protobuf.WellKnownTypes.Timestamp.FromDateTime(DateTime.UtcNow),
+                    InvalidTime = Google.Protobuf.WellKnownTypes.Timestamp.FromDateTime(DateTime.UtcNow.AddMinutes(5)),
                     PriceDetails = new CurrencyModel
                     {
                         Price = (double)estimateResponse.Price,
@@ -110,7 +112,7 @@ namespace UberClient.Services
                     },
                     Distance = estimateResponse.Distance,
                     Seats = product.Shared ? request.Seats : product.Capacity,
-                    //RequestUrl = $"https://m.uber.com/ul/?client_id={clientId}&action=setPickup&pickup[latitude]={request.StartPoint.Latitude}&pickup[longitude]={request.StartPoint.Longitude}&dropoff[latitude]={request.EndPoint.Latitude}&dropoff[longitude]={request.EndPoint.Longitude}&product_id={service}",
+                    RequestUrl = $"https://m.uber.com/ul/?client_id={clientId}&action=setPickup&pickup[latitude]={request.StartPoint.Latitude}&pickup[longitude]={request.StartPoint.Longitude}&dropoff[latitude]={request.EndPoint.Latitude}&dropoff[longitude]={request.EndPoint.Longitude}&product_id={service}",
                     DisplayName = product.DisplayName,
                 };
 
