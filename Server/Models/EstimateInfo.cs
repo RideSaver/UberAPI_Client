@@ -12,16 +12,18 @@ namespace UberClient.Models
         {
             if (estimateResponse.GetType() == typeof(EstimateWithSurge))
             {
-                EstimateWithSurge estimateWithSurge = estimateResponse.ActualInstance as EstimateWithSurge;
-                return new EstimateInfo {
+                EstimateWithSurge estimateWithSurge = (EstimateWithSurge)estimateResponse.ActualInstance;
+                return new EstimateInfo
+                {
                     FareId = null,
                     Distance = (int)estimateWithSurge.Trip.DistanceEstimate,
                     Price = estimateWithSurge.Estimate.HighEstimate,
                     Currency = estimateWithSurge.Estimate.CurrencyCode,
                 };
             }
-            else if (estimateResponse.GetType() == typeof(EstimateWithoutSurge)) {
-                EstimateWithoutSurge estimateWithoutSurge = estimateResponse.ActualInstance as EstimateWithoutSurge;
+            else if (estimateResponse.GetType() == typeof(EstimateWithoutSurge))
+            {
+                EstimateWithoutSurge estimateWithoutSurge = (EstimateWithoutSurge)estimateResponse.ActualInstance;
                 return new EstimateInfo
                 {
                     FareId = estimateWithoutSurge.Fare.FareId,
