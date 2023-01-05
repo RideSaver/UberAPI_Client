@@ -10,7 +10,7 @@ namespace UberClient.Models
         public string? Currency { get; set; }
         public static EstimateInfo FromEstimateResponse(RequestEstimateResponse estimateResponse)
         {
-            if (estimateResponse.GetType() == typeof(EstimateWithSurge))
+            if (estimateResponse.ActualInstance is EstimateWithSurge)
             {
                 EstimateWithSurge estimateWithSurge = (EstimateWithSurge)estimateResponse.ActualInstance;
                 return new EstimateInfo
@@ -21,7 +21,7 @@ namespace UberClient.Models
                     Currency = estimateWithSurge.Estimate.CurrencyCode,
                 };
             }
-            else if (estimateResponse.GetType() == typeof(EstimateWithoutSurge))
+            else if (estimateResponse.ActualInstance is EstimateWithoutSurge)
             {
                 EstimateWithoutSurge estimateWithoutSurge = (EstimateWithoutSurge)estimateResponse.ActualInstance;
                 return new EstimateInfo
