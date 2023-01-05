@@ -5,11 +5,12 @@ using UberClient.Models;
 using UberClient.Extensions;
 using UberClient.Interface;
 using DataAccess.Services;
+using UberAPI.Client.Model;
 
 using RequestsApi = UberAPI.Client.Api.RequestsApi;
 using ProductsApi = UberAPI.Client.Api.ProductsApi;
 using Configuration = UberAPI.Client.Client.Configuration;
-using UberAPI.Client.Model;
+
 
 namespace UberClient.Services
 {
@@ -54,7 +55,7 @@ namespace UberClient.Services
             }
             //--------------------------------------------------------------------------------------------------------------------------------//
 
-            DistributedCacheEntryOptions options = new DistributedCacheEntryOptions() { AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(24)};
+            DistributedCacheEntryOptions options = new() { AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(24)};
 
             foreach (var service in request.Services)
             {
@@ -73,10 +74,10 @@ namespace UberClient.Services
                     ProductId = service.ToString().Replace("-", string.Empty),
                     StartLatitude = (decimal)request.StartPoint.Latitude,
                     StartLongitude = (decimal)request.StartPoint.Longitude,
-                    StartPlaceId = "startID",
+                    StartPlaceId = "START",
                     EndLatitude = (decimal)request.EndPoint.Latitude,
                     EndLongitude = (decimal)request.EndPoint.Longitude,
-                    EndPlaceId = "endID",
+                    EndPlaceId = "END",
                     SeatCount = request.Seats
                 };
 
