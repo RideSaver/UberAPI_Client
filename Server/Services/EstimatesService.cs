@@ -67,7 +67,7 @@ namespace UberClient.Services
 
                 RequestsEstimateRequest requestInstance = new()
                 {
-                    ProductId = service.ToString().Replace("-", string.Empty),
+                    ProductId = service.ToString(),
                     StartLatitude = (decimal)request.StartPoint.Latitude,
                     StartLongitude = (decimal)request.StartPoint.Longitude,
                     StartPlaceId = "START",
@@ -95,7 +95,7 @@ namespace UberClient.Services
 
                 var product = await _productsApiClient.ProductProductIdAsync(requestInstance.ProductId);
 
-                _logger.LogInformation($"[UberClient::EstimatesService::GetEstimates] Instance receieved (Product) from MockAPI: {product}");
+                _logger.LogInformation($"[UberClient::EstimatesService::GetEstimates] Instance receieved (Product) from MockAPI:\n{product.ToString()}");
                 _logger.LogInformation("[UberClient::EstimatesService::GetEstimates] GetProduct API call successfuully finished.");
 
                 // Write an InternalAPI model back
