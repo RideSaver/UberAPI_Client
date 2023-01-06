@@ -6,14 +6,23 @@ using UberClient.Interface;
 using UberClient.Internal;
 using UberClient.Filters;
 using Microsoft.ApplicationInsights.Extensibility;
+using Microsoft.AspNetCore.DataProtection;
+using StackExchange.Redis;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddMvc();
-builder.Services.AddDistributedRedisCache(options =>
+
+builder.Services.AddDataProtection()
+                .SetApplicationName("LyftClientSession")
+                .PersistKeysToStackExchangeRedis(ConnectionMultiplexer.Connect(
+                "uber-redis:6379,password=a-very-complex-password-here,ssl=True,abortConnect=False"),
+                "DataProtection-Keys");
+
+builder.Services.AddStackExchangeRedisCache(options => 
 {
-    options.Configuration = builder.Configuration.GetConnectionString("RedisCache");
-    options.InstanceName = "";
+    options.Configuration = "uber-redis:6379,password=a-very-complex-password-here,ssl=True,abortConnect=False";
+    options.InstanceName = "redis";
 });
 
 builder.Services.AddHttpClient();

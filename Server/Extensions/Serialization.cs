@@ -1,5 +1,8 @@
-using Newtonsoft.Json;
 using Newtonsoft.Json.Bson;
+using System.Text.Json.Serialization;
+using System.Text.Json;
+
+using JsonSerializer = Newtonsoft.Json.JsonSerializer;
 
 namespace UberClient.Extensions
 {
@@ -31,6 +34,15 @@ namespace UberClient.Extensions
 
             return data;
         }
-
+        public static JsonSerializerOptions GetJsonSerializerOptions()
+        {
+            return new JsonSerializerOptions()
+            {
+                PropertyNamingPolicy = null,
+                WriteIndented = true,
+                AllowTrailingCommas = true,
+                DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
+            };
+        }
     }
 }
