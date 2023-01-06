@@ -7,7 +7,6 @@ using UberClient.Interface;
 using DataAccess.Services;
 using UberAPI.Client.Model;
 
-
 using RequestsApi = UberAPI.Client.Api.RequestsApi;
 using ProductsApi = UberAPI.Client.Api.ProductsApi;
 using Configuration = UberAPI.Client.Client.Configuration;
@@ -45,7 +44,7 @@ namespace UberClient.Services
             foreach (var service in request.Services) { _logger.LogInformation($"[UberClient::EstimatesService::GetEstimates] ServiceID: {service}"); }
             //--------------------------------------------------------------------------------------------------------------------------------//
 
-            DistributedCacheEntryOptions options = new() { AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(24)};
+            DistributedCacheEntryOptions options = new() { AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(24) , SlidingExpiration = TimeSpan.FromHours(5) };
 
             foreach (var service in request.Services)
             {
@@ -127,11 +126,11 @@ namespace UberClient.Services
 
             _logger.LogInformation($"[UberClient::EstimatesService::GetEstimateRefresh] HTTP Context session token : {SessionToken}");
 
-            DistributedCacheEntryOptions options = new DistributedCacheEntryOptions() { AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(24) };
+            EstimateCache? prevEstimate = await _cache.GetAsync<EstimateCache>(request.EstimateId);
 
-            EstimateCache prevEstimate = await _cache.GetAsync<EstimateCache>(request.EstimateId);
+            if(prevEstimate is null) { _logger.LogInformation($"[UberClient::EstimatesService::GetEstimateRefresh] Failed to retrieve previous estimate from cache."); }
 
-            var oldRequest = prevEstimate.GetEstimatesRequest;
+            var oldRequest = prevEstimate!.GetEstimatesRequest;
             string service = prevEstimate.ProductId.ToString();
 
             _requestsApiClient.Configuration = new Configuration { AccessToken = await _accessTokenService.GetAccessTokenAsync(SessionToken, service) };
@@ -179,7 +178,7 @@ namespace UberClient.Services
                 EstimateInfo = estimateResponse,
                 GetEstimatesRequest = oldRequest,
                 ProductId = prevEstimate.ProductId
-            }, options);
+            });
 
             return estimateModel;
         }

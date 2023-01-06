@@ -33,6 +33,8 @@ builder.Services.AddHealthChecks();
 builder.Services.AddTransient<IAccessTokenService, AccessTokenService>();
 builder.Services.AddSingleton<IServicesService, ServicesService>();
 builder.Services.AddSingleton<ITelemetryInitializer, FilterHealthchecksTelemetryInitializer>();
+builder.Services.AddSingleton<ICacheProvider, CacheProvider>();
+
 
 builder.Services.AddHostedService<ServicesService>();
 
