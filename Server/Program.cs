@@ -12,7 +12,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddMvc();
 builder.Services.AddDistributedRedisCache(options =>
 {
-    options.Configuration ="https://uber-redis:6379";
+    options.Configuration = "redis://uber-redis:6379";
     options.InstanceName = "";
 });
 
