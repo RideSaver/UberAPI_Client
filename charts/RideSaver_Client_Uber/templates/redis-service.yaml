@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "UberClient.fullname" . }}-redis
+  labels:
+    {{- include "UberClient.labels" . | nindent 4 }}
+    app: redis
+spec:
+  type: {{ .Values.service.type }}
+  ports:
+    - port: 6379
+      targetPort: 6379
+      protocol: TCP
+      name: redis
+  selector:
+    {{- include "UberClient.selectorLabels" . | nindent 4 }}
+    app: redis
