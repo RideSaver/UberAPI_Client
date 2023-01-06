@@ -1,6 +1,4 @@
-using UberAPI.Client.Model;
 using InternalAPI;
-using UberClient.Models;
 namespace UberClient.Models
 {
     public class EstimateCache
