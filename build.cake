@@ -65,7 +65,6 @@ Task("Publish")
         Configuration = "Release",
         OutputDirectory = "./publish/",
         SelfContained = true,
-        PublishTrimmed = true,
         Runtime = Runtime
     });
 });
