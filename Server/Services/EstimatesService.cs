@@ -6,12 +6,11 @@ using UberClient.Extensions;
 using UberClient.Interface;
 using DataAccess.Services;
 using UberAPI.Client.Model;
-using System.Net.Http;
+
 
 using RequestsApi = UberAPI.Client.Api.RequestsApi;
 using ProductsApi = UberAPI.Client.Api.ProductsApi;
 using Configuration = UberAPI.Client.Client.Configuration;
-using Newtonsoft.Json;
 
 namespace UberClient.Services
 {
