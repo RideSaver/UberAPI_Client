@@ -14,22 +14,17 @@ namespace UberClient.Services
     public class RequestsService : Requests.RequestsBase
     {
         private readonly ILogger<RequestsService> _logger;
-        private readonly IHttpClientFactory _clientFactory;
         private readonly IDistributedCache _cache;
         private readonly IAccessTokenService _accessTokenService;
         private readonly IHttpContextAccessor _httpContextAccessor;
 
         private readonly RequestsApi _requestsApiClient;
         private readonly ProductsApi _productsApiClient;
-        private readonly HttpClient _httpClient;
 
-        public RequestsService(ILogger<RequestsService> logger, IDistributedCache cache, IHttpClientFactory clientFactory, IAccessTokenService accessTokenService, IHttpContextAccessor httpContextAccessor)
+        public RequestsService(ILogger<RequestsService> logger, IDistributedCache cache, IAccessTokenService accessTokenService, IHttpContextAccessor httpContextAccessor)
         {
-            _clientFactory = clientFactory;
-            _httpClient = _clientFactory.CreateClient();
             _accessTokenService = accessTokenService;
             _httpContextAccessor = httpContextAccessor;
-
             _logger = logger;
             _cache = cache;
 
@@ -45,38 +40,36 @@ namespace UberClient.Services
 
             DistributedCacheEntryOptions options = new DistributedCacheEntryOptions() { AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(24) };
 
-            var cacheEstimate = await _cache.GetAsync<EstimateCache> (request.RideId);
+            var cacheEstimate = await _cache.GetAsync<EstimateCache>(request.RideId);
 
-            _requestsApiClient.Configuration = new Configuration
-            {
-                AccessToken = await _accessTokenService.GetAccessTokenAsync(SessionToken!, cacheEstimate.ProductId.ToString()),
-            };
+            _requestsApiClient.Configuration = new Configuration { AccessToken = await _accessTokenService.GetAccessTokenAsync(SessionToken!, cacheEstimate.ProductId.ToString()) };
 
-            var ride = await _requestsApiClient.RequestRequestIdAsync(request.RideId);
+            var responseInstance = await _requestsApiClient.RequestRequestIdAsync(request.RideId);
 
             // Write an InternalAPI model back
-            return new RideModel() {
+            return new RideModel()
+            {
                 RideId = request.RideId,
-                EstimatedTimeOfArrival = Google.Protobuf.WellKnownTypes.Timestamp.FromDateTime(DateTime.Now.AddSeconds(ride.Pickup.Eta)),
-                RiderOnBoard = ride.Status == "IN_PROGRESS",
+                EstimatedTimeOfArrival = Google.Protobuf.WellKnownTypes.Timestamp.FromDateTime(DateTime.Now.AddSeconds(responseInstance.Pickup.Eta)),
+                RideStage = getStageFromStatus(responseInstance.Status),
+                RiderOnBoard = responseInstance.Status == "IN_PROGRESS",
                 Price = new CurrencyModel
                 {
-                    Price = (double)cacheEstimate.EstimateInfo.Price,
+                    Price = (double)cacheEstimate.EstimateInfo!.Price,
                     Currency = cacheEstimate.EstimateInfo.Currency,
                 },
                 Driver = new DriverModel
                 {
-                    DisplayName = ride.Drivers.Name,
-                    LicensePlate = ride.Vehicle.LicensePlate,
-                    CarPicture = ride.Vehicle.PictureUrl,
-                    CarDescription = $"{ride.Vehicle.Make} {ride.Vehicle.Model}",
-                    DriverPronounciation = ride.Drivers.Name
+                    DisplayName = responseInstance.Drivers.Name,
+                    LicensePlate = responseInstance.Vehicle.LicensePlate,
+                    CarPicture = responseInstance.Vehicle.PictureUrl,
+                    CarDescription = $"{responseInstance.Vehicle.Make} {responseInstance.Vehicle.Model}",
+                    DriverPronounciation = responseInstance.Drivers.Name
                 },
-                RideStage = getStageFromStatus(ride.Status),
                 DriverLocation = new LocationModel
                 {
-                    Latitude = ride.Location.Latitude,
-                    Longitude = ride.Location.Longitude
+                    Latitude = responseInstance.Location.Latitude,
+                    Longitude = responseInstance.Location.Longitude
                 },
             };
         }
@@ -93,34 +86,35 @@ namespace UberClient.Services
 
             _requestsApiClient.Configuration = new Configuration { AccessToken = await _accessTokenService.GetAccessTokenAsync(SessionToken, cacheEstimate.ProductId.ToString()), };
 
-            UberAPI.Client.Model.CreateRequests requests = new UberAPI.Client.Model.CreateRequests()
+            UberAPI.Client.Model.CreateRequests requests = new()
             {
-                FareId = cacheEstimate.EstimateInfo.FareId!,
+                FareId = cacheEstimate.EstimateInfo!.FareId!,
                 ProductId = cacheEstimate.ProductId.ToString(),
-                StartLatitude = (float)cacheEstimate.GetEstimatesRequest.StartPoint.Latitude,
+                StartLatitude = (float)cacheEstimate.GetEstimatesRequest!.StartPoint.Latitude,
                 StartLongitude = (float)cacheEstimate.GetEstimatesRequest.StartPoint.Longitude,
                 EndLatitude = (float)cacheEstimate.GetEstimatesRequest.EndPoint.Latitude,
                 EndLongitude = (float)cacheEstimate.GetEstimatesRequest.EndPoint.Longitude,
             };
 
-            var ride = await _requestsApiClient.CreateRequestsAsync(requests);
-            cacheEstimate.RequestId = Guid.Parse(ride._RequestId);
+            var responseInstance = await _requestsApiClient.CreateRequestsAsync(requests);
 
-            await _cache.SetAsync<EstimateCache>(request.EstimateId, cacheEstimate, options);
+            cacheEstimate.RequestId = Guid.Parse(responseInstance._RequestId);
+
+            await _cache.SetAsync(request.EstimateId, cacheEstimate, options);
 
             return new RideModel()
             {
                 RideId = request.EstimateId,
-                EstimatedTimeOfArrival = Google.Protobuf.WellKnownTypes.Timestamp.FromDateTime(DateTime.Now.AddSeconds(ride.Pickup.Eta)),
-                RiderOnBoard = ride.Status == "IN_PROGRESS",
+                EstimatedTimeOfArrival = Google.Protobuf.WellKnownTypes.Timestamp.FromDateTime(DateTime.Now.AddSeconds(responseInstance.Pickup.Eta)),
+                RideStage = getStageFromStatus(responseInstance.Status),
+                RiderOnBoard = responseInstance.Status == "IN_PROGRESS",
+                Driver = null,
+                DriverLocation = null,
                 Price = new CurrencyModel
                 {
                     Price = (double)cacheEstimate.EstimateInfo.Price,
                     Currency = cacheEstimate.EstimateInfo.Currency
-                },
-                Driver = null,
-                RideStage = getStageFromStatus(ride.Status),
-                DriverLocation = null,
+                }
             };
         }
 
@@ -151,16 +145,11 @@ namespace UberClient.Services
         {
             switch (status)
             {
-                case "processing":
-                    return Stage.Pending;
-                case "accepted":
-                    return Stage.Accepted;
-                case "no drivers available":
-                    return Stage.Cancelled;
-                case "completed":
-                    return Stage.Completed;
-                default:
-                    return Stage.Unknown;
+                case "processing": return Stage.Pending;
+                case "accepted": return Stage.Accepted;
+                case "no drivers available": return Stage.Cancelled;
+                case "completed": return Stage.Completed;
+                default: return Stage.Unknown;
             }
         }
     }

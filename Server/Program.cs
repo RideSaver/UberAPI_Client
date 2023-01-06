@@ -12,7 +12,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddMvc();
 builder.Services.AddDistributedRedisCache(options =>
 {
-    options.Configuration ="https//uber-redis:6379";
+    options.Configuration = builder.Configuration.GetConnectionString("RedisCache");
     options.InstanceName = "";
 });
 
@@ -32,7 +32,7 @@ builder.Services.Configure<ListenOptions>(options =>
     options.UseHttps(new X509Certificate2(Path.Combine("/certs/tls.crt"), Path.Combine("/certs/tls.key")));
 });
 
-builder.Services.AddGrpcClient<InternalAPI.Services.ServicesClient>(o =>
+builder.Services.AddGrpcClient<Services.ServicesClient>(o =>
 {
     var httpHandler = new HttpClientHandler();
     httpHandler.ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator;
