@@ -95,6 +95,8 @@ namespace UberClient.Services
 
                 var product = await _productsApiClient.ProductProductIdAsync(requestInstance.ProductId);
 
+                if(product is null) { _logger.LogInformation("[UberClient::EstimatesService::GetEstimates] Product Instance is null!"); }
+
                 _logger.LogInformation($"[UberClient::EstimatesService::GetEstimates] Instance receieved (Product) from MockAPI:\n{product.ToString()}");
                 _logger.LogInformation("[UberClient::EstimatesService::GetEstimates] GetProduct API call successfuully finished.");
 
