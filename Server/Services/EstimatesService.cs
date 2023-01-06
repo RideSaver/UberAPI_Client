@@ -102,8 +102,8 @@ namespace UberClient.Services
                 var estimateModel = new EstimateModel()
                 {
                     EstimateId = estimateResponseId,
-                    CreatedTime = Google.Protobuf.WellKnownTypes.Timestamp.FromDateTime(DateTime.Now),
-                    InvalidTime = Google.Protobuf.WellKnownTypes.Timestamp.FromDateTime(DateTime.Now.AddMinutes(5)),
+                    CreatedTime = Google.Protobuf.WellKnownTypes.Timestamp.FromDateTime(DateTime.Now.ToUniversalTime()),
+                    InvalidTime = Google.Protobuf.WellKnownTypes.Timestamp.FromDateTime(DateTime.Now.AddMinutes(5).ToUniversalTime()),
                     PriceDetails = new CurrencyModel
                     {
                         Price = (double)estimateResponse.Price,
