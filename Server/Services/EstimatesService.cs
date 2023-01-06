@@ -48,13 +48,7 @@ namespace UberClient.Services
 
             //----------------------------------------------------------[DEBUG]---------------------------------------------------------------//
             _logger.LogInformation($"[UberClient::EstimatesService::GetEstimates] HTTP Context session token: {SessionToken}");
-            _logger.LogInformation($"[UberClient::EstimatesService::GetEstimates] Request: START: {request.StartPoint} END: {request.EndPoint}");
-
-            foreach (var service in request.Services)
-            {
-                _logger.LogInformation($"[UberClient::EstimatesService::GetEstimates] Request: SERVICE ID: {service}");
-                _logger.LogInformation($"[UberClient::EstimatesService::GetEstimates] Request: SERVICE ID (ToString): {service.ToString().Replace("-", string.Empty)}");
-            }
+            foreach (var service in request.Services) { _logger.LogInformation($"[UberClient::EstimatesService::GetEstimates] ServiceID: {service}"); }
             //--------------------------------------------------------------------------------------------------------------------------------//
 
             DistributedCacheEntryOptions options = new() { AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(24)};
@@ -83,7 +77,11 @@ namespace UberClient.Services
                     SeatCount = request.Seats
                 };
 
+                _logger.LogInformation($"[UberClient::EstimatesService::GetEstimates] Instance being sent to MockAPI: {requestInstance}");
+
                 var estimateResponse = EstimateInfo.FromEstimateResponse(await _requestsApiClient.RequestsEstimateAsync(requestInstance));
+
+                _logger.LogInformation($"[UberClient::EstimatesService::GetEstimates] Instance receieved (EstimateInfo) from MockAPI: {estimateResponse}");
 
                 _logger.LogInformation("[UberClient::EstimatesService::GetEstimates] RequestsEstimate API call successfuully finished.");
 
@@ -97,14 +95,15 @@ namespace UberClient.Services
 
                 var product = await _productsApiClient.ProductProductIdAsync(requestInstance.ProductId);
 
+                _logger.LogInformation($"[UberClient::EstimatesService::GetEstimates] Instance receieved (Product) from MockAPI: {product}");
                 _logger.LogInformation("[UberClient::EstimatesService::GetEstimates] GetProduct API call successfuully finished.");
 
                 // Write an InternalAPI model back
                 var estimateModel = new EstimateModel()
                 {
                     EstimateId = estimateResponseId,
-                    CreatedTime = Google.Protobuf.WellKnownTypes.Timestamp.FromDateTime(DateTime.UtcNow),
-                    InvalidTime = Google.Protobuf.WellKnownTypes.Timestamp.FromDateTime(DateTime.UtcNow.AddMinutes(5)),
+                    CreatedTime = Google.Protobuf.WellKnownTypes.Timestamp.FromDateTime(DateTime.Now),
+                    InvalidTime = Google.Protobuf.WellKnownTypes.Timestamp.FromDateTime(DateTime.Now.AddMinutes(5)),
                     PriceDetails = new CurrencyModel
                     {
                         Price = (double)estimateResponse.Price,
@@ -112,7 +111,7 @@ namespace UberClient.Services
                     },
                     Distance = estimateResponse.Distance,
                     Seats = product.Shared ? request.Seats : product.Capacity,
-                    RequestUrl = $"https://m.uber.com/ul/?client_id={clientId}&action=setPickup&pickup[latitude]={request.StartPoint.Latitude}&pickup[longitude]={request.StartPoint.Longitude}&dropoff[latitude]={request.EndPoint.Latitude}&dropoff[longitude]={request.EndPoint.Longitude}&product_id={service}",
+                    RequestUrl = $"https://uber.mock/client_id={clientId}&action=setPickup&pickup[latitude]={request.StartPoint.Latitude}&pickup[longitude]={request.StartPoint.Longitude}&dropoff[latitude]={request.EndPoint.Latitude}&dropoff[longitude]={request.EndPoint.Longitude}&product_id={requestInstance.ProductId}",
                     DisplayName = product.DisplayName,
                 };
 

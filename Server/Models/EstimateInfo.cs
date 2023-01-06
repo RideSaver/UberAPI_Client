@@ -10,20 +10,18 @@ namespace UberClient.Models
         public string? Currency { get; set; }
         public static EstimateInfo FromEstimateResponse(RequestEstimateResponse estimateResponse)
         {
-            if (estimateResponse.ActualInstance is EstimateWithSurge)
+            if (estimateResponse.ActualInstance is EstimateWithSurge estimateWithSurge)
             {
-                EstimateWithSurge estimateWithSurge = (EstimateWithSurge)estimateResponse.ActualInstance;
                 return new EstimateInfo
                 {
-                    FareId = null,
+                    FareId = string.Empty,
                     Distance = (int)estimateWithSurge.Trip.DistanceEstimate,
                     Price = estimateWithSurge.Estimate.HighEstimate,
                     Currency = estimateWithSurge.Estimate.CurrencyCode,
                 };
             }
-            else if (estimateResponse.ActualInstance is EstimateWithoutSurge)
+            else if (estimateResponse.ActualInstance is EstimateWithoutSurge estimateWithoutSurge)
             {
-                EstimateWithoutSurge estimateWithoutSurge = (EstimateWithoutSurge)estimateResponse.ActualInstance;
                 return new EstimateInfo
                 {
                     FareId = estimateWithoutSurge.Fare.FareId,
