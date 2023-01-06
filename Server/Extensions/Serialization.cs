@@ -1,34 +1,35 @@
-using System.IO;
-using System.Runtime.Serialization.Formatters.Binary;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Bson;
 
 namespace UberClient.Extensions
 {
     public static class Serialization
     {
-        public static byte[] ToByteArray(this object obj)
+        public static byte[]? ToByteArray(this object obj)
         {
-            if (obj == null)
+            if (obj is null) return null;
+                   
+            MemoryStream MS = new MemoryStream();
+            using(BsonDataWriter writer = new BsonDataWriter(MS))
             {
-                return null;
+                JsonSerializer serializer= new JsonSerializer();
+                serializer.Serialize(writer, obj);
             }
-            BinaryFormatter binaryFormatter = new BinaryFormatter();
-            using (MemoryStream memoryStream = new MemoryStream())
-            {
-                binaryFormatter.Serialize(memoryStream, obj);
-                return memoryStream.ToArray();
-            }
+            return MS.ToArray(); 
         }
-        public static T FromByteArray<T>(this byte[] byteArray) where T : class
+        public static T? FromByteArray<T>(this byte[] byteArray) where T : class
         {
-            if (byteArray == null)
+            if (byteArray is null) return default;
+
+            T data;
+            MemoryStream ms = new MemoryStream(byteArray);
+            using (BsonDataReader reader = new BsonDataReader(ms))
             {
-                return default;
+                JsonSerializer serializer= new JsonSerializer();
+                data = serializer.Deserialize<T>(reader)!;
             }
-            BinaryFormatter binaryFormatter = new BinaryFormatter();
-            using (MemoryStream memoryStream = new MemoryStream(byteArray))
-            {
-                return binaryFormatter.Deserialize(memoryStream) as T;
-            }
+
+            return data;
         }
 
     }
