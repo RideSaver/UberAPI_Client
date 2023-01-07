@@ -11,32 +11,45 @@ using StackExchange.Redis;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddMvc();
+ConnectionMultiplexer cm = ConnectionMultiplexer.Connect(builder.Configuration.GetConnectionString("RedisCache"));
+builder.Services.AddSingleton<IConnectionMultiplexer>(cm);
 
 builder.Services.AddDataProtection()
                 .SetApplicationName("LyftClientSession")
-                .PersistKeysToStackExchangeRedis(ConnectionMultiplexer.Connect(
-                "uber-redis:6379,password=a-very-complex-password-here,ssl=True,abortConnect=False"),
-                "DataProtection-Keys");
+                .PersistKeysToStackExchangeRedis(ConnectionMultiplexer.Connect(builder.Configuration.GetConnectionString("RedisCache")), "DataProtection-Keys");
 
 builder.Services.AddStackExchangeRedisCache(options =>
 {
     options.Configuration = builder.Configuration.GetConnectionString("RedisCache");
     options.InstanceName = "Redis_";
 
+    options.ConnectionMultiplexerFactory = () =>
+    {
+        var serviceProvider = builder.Services.BuildServiceProvider();
+        IConnectionMultiplexer connection = serviceProvider.GetService<IConnectionMultiplexer>();
+        return Task.FromResult(connection);
+    };
+
     options.ConfigurationOptions = new ConfigurationOptions()
     {
-        EndPoints = { "uber-redis:6379" },
+        EndPoints =
+        {
+            { "uber-redis", 6379 }
+        },
+        KeepAlive = 180,
         Password = "a-very-complex-password-here",
-        SyncTimeout = 5000,
-        ConnectTimeout = 5000,
+        SyncTimeout = 15000,
+        ConnectTimeout = 15000,
         AbortOnConnectFail = false,
         Ssl = true,
+        SslProtocols = System.Security.Authentication.SslProtocols.Tls12,
         ConnectRetry = 3,
-        ReconnectRetryPolicy = new LinearRetry(5000)
+        AllowAdmin = true,
+        ReconnectRetryPolicy = new ExponentialRetry(5000, 10000)
     };
 });
 
+builder.Services.AddMvc();
 builder.Services.AddHttpClient();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddGrpc();
