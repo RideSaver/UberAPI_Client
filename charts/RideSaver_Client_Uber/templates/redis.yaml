@@ -60,6 +60,8 @@ spec:
           ports:
             - containerPort: 6379
               name: redis
+            - containerPort: 6380
+              name: redis-tls
           volumeMounts:
             - name: {{ include "UberClient.fullname" . }}-redis-data
               mountPath: /data
