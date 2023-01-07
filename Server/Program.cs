@@ -13,34 +13,33 @@ using Microsoft.Extensions.Caching.StackExchangeRedis;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.Configure<ListenOptions>(options =>
+var redisConfig = new ConfigurationOptions()
 {
-    options.UseHttps(new X509Certificate2(Path.Combine("/certs/tls.crt"), Path.Combine("/certs/tls.key")));
-});
+    EndPoints =
+        {
+            { "uber-redis", 6380 }
+        },
+    KeepAlive = 180,
+    Password = "a-very-complex-password-here",
+    SyncTimeout = 15000,
+    ConnectTimeout = 15000,
+    AbortOnConnectFail = false,
+    Ssl = true,
+    SslProtocols = System.Security.Authentication.SslProtocols.Tls12,
+    ConnectRetry = 3,
+    AllowAdmin = true,
+    ReconnectRetryPolicy = new ExponentialRetry(5000, 10000),
+};
+
+ConnectionMultiplexer CM = ConnectionMultiplexer.Connect(redisConfig);
+builder.Services.AddSingleton<IConnectionMultiplexer>(CM);
+builder.Services.AddDataProtection().SetApplicationName("UberClient").PersistKeysToStackExchangeRedis(ConnectionMultiplexer.Connect(redisConfig), "DataProtection-Keys");
 
 builder.Services.AddStackExchangeRedisCache(options =>
 {
     options.Configuration = builder.Configuration.GetConnectionString("RedisCache");
     options.InstanceName = "Redis_";
-
-    options.ConfigurationOptions = new ConfigurationOptions()
-    {
-        EndPoints =
-        {
-            { "uber-redis", 6380 }
-        },
-        KeepAlive = 180,
-        Password = "a-very-complex-password-here",
-        SyncTimeout = 15000,
-        ConnectTimeout = 15000,
-        AbortOnConnectFail = false,
-        Ssl = true,
-        SslProtocols = System.Security.Authentication.SslProtocols.Tls12,
-        ConnectRetry = 3,
-        AllowAdmin = true,
-        ReconnectRetryPolicy = new ExponentialRetry(5000, 10000),
-    };
-
+    options.ConfigurationOptions = redisConfig;
     options.ConfigurationOptions.TrustIssuer("/redis/ca.crt");
     options.ConfigurationOptions.CertificateSelection += delegate
     {
@@ -54,11 +53,6 @@ builder.Services.AddStackExchangeRedisCache(options =>
         return Task.FromResult(connection);
     };
 });
-
-builder.Services.AddDataProtection()
-                .SetApplicationName("UberClient")
-                .PersistKeysToStackExchangeRedis(ConnectionMultiplexer.Connect(
-                    builder.Services.BuildServiceProvider().GetService<RedisCacheOptions>().ConfigurationOptions));
 
 builder.Services.AddMvc();
 builder.Services.AddHttpClient();
@@ -83,6 +77,11 @@ builder.Services.AddGrpcClient<Services.ServicesClient>(o =>
 builder.Services.AddGrpcClient<Users.UsersClient>(o =>
 {
     o.Address = new Uri($"https://identity.api:443");
+});
+
+builder.Services.Configure<ListenOptions>(options =>
+{
+    options.UseHttps(new X509Certificate2(Path.Combine("/certs/tls.crt"), Path.Combine("/certs/tls.key")));
 });
 
 var app = builder.Build();
