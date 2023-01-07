@@ -10,6 +10,11 @@ using StackExchange.Redis;
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.Services.Configure<ListenOptions>(options =>
+{
+    options.UseHttps(new X509Certificate2(Path.Combine("/certs/tls.crt"), Path.Combine("/certs/tls.key")));
+});
+
 X509Certificate2 redisCert = new X509Certificate2(Path.Combine("/certs/tls.crt"), Path.Combine("/certs/tls.key"));
 
 builder.Services.AddStackExchangeRedisCache(options =>
@@ -60,11 +65,6 @@ builder.Services.AddSingleton<ITelemetryInitializer, FilterHealthchecksTelemetry
 builder.Services.AddSingleton<ICacheProvider, CacheProvider>();
 
 builder.Services.AddHostedService<ServicesService>();
-
-builder.Services.Configure<ListenOptions>(options =>
-{
-    options.UseHttps(new X509Certificate2(Path.Combine("/certs/tls.crt"), Path.Combine("/certs/tls.key")));
-});
 
 builder.Services.AddGrpcClient<Services.ServicesClient>(o =>
 {
