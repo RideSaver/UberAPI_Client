@@ -15,24 +15,16 @@ builder.Services.Configure<ListenOptions>(options =>
     options.UseHttps(new X509Certificate2(Path.Combine("/certs/tls.crt"), Path.Combine("/certs/tls.key")));
 });
 
-X509Certificate2 redisCert = new(Path.Combine("/certs/certificate.pfx"), "");
-
 builder.Services.AddStackExchangeRedisCache(options =>
 {
     options.Configuration = builder.Configuration.GetConnectionString("RedisCache");
     options.InstanceName = "Redis_";
 
-    options.ConnectionMultiplexerFactory = () =>
-    {
-        IConnectionMultiplexer connection = ConnectionMultiplexer.Connect(builder.Configuration.GetConnectionString("RedisCache"));
-        return Task.FromResult(connection);
-    };
-
     options.ConfigurationOptions = new ConfigurationOptions()
     {
         EndPoints =
         {
-            { "uber-redis", 6379 }
+            { "uber-redis", 6380 }
         },
         KeepAlive = 180,
         Password = "a-very-complex-password-here",
@@ -46,10 +38,17 @@ builder.Services.AddStackExchangeRedisCache(options =>
         ReconnectRetryPolicy = new ExponentialRetry(5000, 10000),
     };
 
-    options.ConfigurationOptions.TrustIssuer(redisCert);
+    options.ConfigurationOptions.TrustIssuer("/redis/ca.crt");
     options.ConfigurationOptions.CertificateSelection += delegate
     {
+        var redisCert = new X509Certificate2(Path.Combine("/redis/ca.crt"), "");
         return redisCert;
+    };
+
+    options.ConnectionMultiplexerFactory = () =>
+    {
+        IConnectionMultiplexer connection = ConnectionMultiplexer.Connect(options.ConfigurationOptions);
+        return Task.FromResult(connection);
     };
 });
 
