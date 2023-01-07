@@ -54,9 +54,12 @@ builder.Services.AddStackExchangeRedisCache(options =>
     };
 });
 
+var ServiceProvider = builder.Services.BuildServiceProvider();
+IConnectionMultiplexer connection = ServiceProvider.GetService<IConnectionMultiplexer>();
+
 builder.Services.AddDataProtection()
                 .SetApplicationName("UberClient")
-                .PersistKeysToStackExchangeRedis(builder.Services.BuildServiceProvider().GetService<IConnectionMultiplexer>()!);
+                .PersistKeysToStackExchangeRedis(ConnectionMultiplexer.Connect(connection.Configuration));
 
 builder.Services.AddMvc();
 builder.Services.AddHttpClient();
