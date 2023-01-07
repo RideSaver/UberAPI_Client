@@ -6,17 +6,11 @@ using UberClient.Interface;
 using UberClient.Internal;
 using UberClient.Filters;
 using Microsoft.ApplicationInsights.Extensibility;
-using Microsoft.AspNetCore.DataProtection;
 using StackExchange.Redis;
 
 var builder = WebApplication.CreateBuilder(args);
 
-ConnectionMultiplexer cm = ConnectionMultiplexer.Connect(builder.Configuration.GetConnectionString("RedisCache"));
-builder.Services.AddSingleton<IConnectionMultiplexer>(cm);
-
-builder.Services.AddDataProtection()
-                .SetApplicationName("LyftClientSession")
-                .PersistKeysToStackExchangeRedis(ConnectionMultiplexer.Connect(builder.Configuration.GetConnectionString("RedisCache")), "DataProtection-Keys");
+X509Certificate2 redisCert = new X509Certificate2(Path.Combine("/certs/tls.crt"), Path.Combine("/certs/tls.key"));
 
 builder.Services.AddStackExchangeRedisCache(options =>
 {
@@ -25,8 +19,7 @@ builder.Services.AddStackExchangeRedisCache(options =>
 
     options.ConnectionMultiplexerFactory = () =>
     {
-        var serviceProvider = builder.Services.BuildServiceProvider();
-        IConnectionMultiplexer connection = serviceProvider.GetService<IConnectionMultiplexer>();
+        IConnectionMultiplexer connection = ConnectionMultiplexer.Connect(builder.Configuration.GetConnectionString("RedisCache"));
         return Task.FromResult(connection);
     };
 
@@ -45,7 +38,13 @@ builder.Services.AddStackExchangeRedisCache(options =>
         SslProtocols = System.Security.Authentication.SslProtocols.Tls12,
         ConnectRetry = 3,
         AllowAdmin = true,
-        ReconnectRetryPolicy = new ExponentialRetry(5000, 10000)
+        ReconnectRetryPolicy = new ExponentialRetry(5000, 10000),
+    };
+
+    options.ConfigurationOptions.TrustIssuer(redisCert);
+    options.ConfigurationOptions.CertificateSelection += delegate
+    {
+        return redisCert;
     };
 });
 
@@ -59,7 +58,6 @@ builder.Services.AddTransient<IAccessTokenService, AccessTokenService>();
 builder.Services.AddSingleton<IServicesService, ServicesService>();
 builder.Services.AddSingleton<ITelemetryInitializer, FilterHealthchecksTelemetryInitializer>();
 builder.Services.AddSingleton<ICacheProvider, CacheProvider>();
-
 
 builder.Services.AddHostedService<ServicesService>();
 
@@ -81,8 +79,8 @@ builder.Services.AddGrpcClient<Users.UsersClient>(o =>
 });
 
 var app = builder.Build();
-app.UseRouting();
 
+app.UseRouting();
 app.UseHttpsRedirection();
 app.MapControllers();
 app.MapHealthChecks("/healthz");
