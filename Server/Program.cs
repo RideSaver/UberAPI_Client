@@ -9,6 +9,7 @@ using Microsoft.ApplicationInsights.Extensibility;
 using StackExchange.Redis;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Caching.StackExchangeRedis;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -54,12 +55,10 @@ builder.Services.AddStackExchangeRedisCache(options =>
     };
 });
 
-var ServiceProvider = builder.Services.BuildServiceProvider();
-IConnectionMultiplexer connection = ServiceProvider.GetService<IConnectionMultiplexer>();
-
 builder.Services.AddDataProtection()
                 .SetApplicationName("UberClient")
-                .PersistKeysToStackExchangeRedis(ConnectionMultiplexer.Connect(connection.Configuration));
+                .PersistKeysToStackExchangeRedis(ConnectionMultiplexer.Connect(
+                    builder.Services.BuildServiceProvider().GetService<RedisCacheOptions>().ConfigurationOptions));
 
 builder.Services.AddMvc();
 builder.Services.AddHttpClient();
