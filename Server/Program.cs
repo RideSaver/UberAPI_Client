@@ -15,7 +15,7 @@ builder.Services.Configure<ListenOptions>(options =>
     options.UseHttps(new X509Certificate2(Path.Combine("/certs/tls.crt"), Path.Combine("/certs/tls.key")));
 });
 
-X509Certificate2 redisCert = new X509Certificate2(Path.Combine("/certs/tls.crt"), Path.Combine("/certs/tls.key"));
+X509Certificate2 redisCert = new(Path.Combine("/certs/certificate.pfx"), "");
 
 builder.Services.AddStackExchangeRedisCache(options =>
 {
