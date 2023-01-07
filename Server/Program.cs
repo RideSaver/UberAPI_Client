@@ -15,14 +15,14 @@ var redisConfig = new ConfigurationOptions()
 {
     EndPoints =
         {
-            { "uber-redis", 6380 }
+            { "uber-redis", 6379 }
         },
     KeepAlive = 180,
     Password = "a-very-complex-password-here",
     SyncTimeout = 15000,
     ConnectTimeout = 15000,
     AbortOnConnectFail = false,
-    Ssl = true,
+    Ssl = false,
     SslProtocols = System.Security.Authentication.SslProtocols.Tls12,
     ConnectRetry = 3,
     AllowAdmin = true,
