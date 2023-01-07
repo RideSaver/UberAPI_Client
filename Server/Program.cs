@@ -19,10 +19,21 @@ builder.Services.AddDataProtection()
                 "uber-redis:6379,password=a-very-complex-password-here,ssl=True,abortConnect=False"),
                 "DataProtection-Keys");
 
-builder.Services.AddStackExchangeRedisCache(options => 
+builder.Services.AddStackExchangeRedisCache(options =>
 {
-    options.Configuration = "uber-redis:6379,password=a-very-complex-password-here,ssl=True,abortConnect=False";
-    options.InstanceName = "redis";
+    options.Configuration = builder.Configuration.GetConnectionString("RedisCache");
+    options.InstanceName = "Redis_";
+
+    options.ConfigurationOptions = new ConfigurationOptions()
+    {
+        EndPoints = { "uber-redis", "6379" },
+        Password = "a-very-complex-password-here",
+        SyncTimeout = 500000,
+        ConnectTimeout = 6000,
+        AbortOnConnectFail = false,
+        Ssl = true,
+        ConnectRetry = 3
+    };
 });
 
 builder.Services.AddHttpClient();
@@ -45,7 +56,7 @@ builder.Services.Configure<ListenOptions>(options =>
 
 builder.Services.AddGrpcClient<Services.ServicesClient>(o =>
 {
-    var httpHandler = new HttpClientHandler();
+    HttpClientHandler httpHandler = new();
     httpHandler.ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator;
     o.Address = new Uri($"https://services.api:443");
 });

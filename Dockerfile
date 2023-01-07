@@ -28,6 +28,7 @@ RUN apk add --no-cache libstdc++ libintl openssl
 
 EXPOSE 80
 EXPOSE 443
+EXPOSE 6379
 ENV DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=1
 
 # Copy

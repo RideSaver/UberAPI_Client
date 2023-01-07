@@ -7,11 +7,11 @@ namespace UberClient.Internal
     public class CacheProvider : ICacheProvider
     {
         private readonly IDistributedCache _cache;
-        public CacheProvider(IDistributedCache cache)
-        {
-            _cache = cache; 
-        }
+
+        public CacheProvider(IDistributedCache cache) => _cache = cache;
+
         public async Task ClearCacheAsync(string key) => await _cache.RemoveAsync(key);
+
         public async Task<T?> GetFromCacheAsync<T>(string key) where T : class
         {
             var cachedResponse = await _cache.GetStringAsync(key);
