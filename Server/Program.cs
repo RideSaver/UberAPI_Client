@@ -26,13 +26,14 @@ builder.Services.AddStackExchangeRedisCache(options =>
 
     options.ConfigurationOptions = new ConfigurationOptions()
     {
-        EndPoints = { "uber-redis", "6379" },
+        EndPoints = { "uber-redis:6379" },
         Password = "a-very-complex-password-here",
-        SyncTimeout = 500000,
-        ConnectTimeout = 6000,
+        SyncTimeout = 5000,
+        ConnectTimeout = 5000,
         AbortOnConnectFail = false,
         Ssl = true,
-        ConnectRetry = 3
+        ConnectRetry = 3,
+        ReconnectRetryPolicy = new LinearRetry(5000)
     };
 });
 
