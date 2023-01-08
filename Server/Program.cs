@@ -62,6 +62,7 @@ builder.Services.AddSingleton<ITelemetryInitializer, FilterHealthchecksTelemetry
 builder.Services.AddSingleton<ICacheProvider, CacheProvider>();
 
 builder.Services.AddHostedService<ServicesService>();
+builder.Services.AddHostedService<CertificateStatusService>();
 
 builder.Services.AddGrpcClient<Services.ServicesClient>(o =>
 {
