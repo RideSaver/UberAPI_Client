@@ -50,7 +50,8 @@ namespace UberClient.Services
 
             foreach (var service in servicesList)
             {
-                if (service is null) continue;
+                ServiceLinker.ServiceIDs.TryGetValue(service, out string? serviceName);
+                if (serviceName is null) continue;
 
                 _requestsApiClient.Configuration = new Configuration { AccessToken = await _accessTokenService.GetAccessTokenAsync(SessionToken, service.ToString()) };
 
