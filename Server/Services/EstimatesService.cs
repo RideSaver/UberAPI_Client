@@ -122,6 +122,7 @@ namespace UberClient.Services
                     _logger.LogInformation($"[UberClient::EstimatesService::GetEstimates] Sending (EstimateModel) back to caller...");
 
                     await responseStream.WriteAsync(estimateModel);
+                    await Task.Delay(TimeSpan.FromSeconds(1), context.CancellationToken);
                 }
             }
         }
