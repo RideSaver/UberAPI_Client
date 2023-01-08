@@ -46,84 +46,81 @@ namespace UberClient.Services
 
             DistributedCacheEntryOptions options = new() { AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(24) , SlidingExpiration = TimeSpan.FromHours(5) };
 
-            while(!context.CancellationToken.IsCancellationRequested)
+            foreach (var service in request.Services)
             {
-                foreach (var service in request.Services)
+                if (service is null) continue;
+
+                _requestsApiClient.Configuration = new Configuration { AccessToken = await _accessTokenService.GetAccessTokenAsync(SessionToken, service.ToString()) };
+
+                if (_requestsApiClient.Configuration.AccessToken is null)
                 {
-                    if (service is null) continue;
-
-                    _requestsApiClient.Configuration = new Configuration { AccessToken = await _accessTokenService.GetAccessTokenAsync(SessionToken, service.ToString()) };
-
-                    if (_requestsApiClient.Configuration.AccessToken is null)
-                    {
-                        _logger.LogError("[UberClient::EstimatesService::GetEstimates] AccessToken is NULL.");
-                        continue;
-                    }
-
-                    RequestsEstimateRequest requestInstance = new()
-                    {
-                        ProductId = service.ToString(),
-                        StartLatitude = (decimal)request.StartPoint.Latitude,
-                        StartLongitude = (decimal)request.StartPoint.Longitude,
-                        StartPlaceId = "START",
-                        EndLatitude = (decimal)request.EndPoint.Latitude,
-                        EndLongitude = (decimal)request.EndPoint.Longitude,
-                        EndPlaceId = "END",
-                        SeatCount = request.Seats
-                    };
-
-                    _logger.LogInformation($"[UberClient::EstimatesService::GetEstimates] Sending (RequestsEstimate) to MockAPI... \n{requestInstance}");
-
-                    var estimateResponse = EstimateInfo.FromEstimateResponse(await _requestsApiClient.RequestsEstimateAsync(requestInstance));
-
-                    _logger.LogInformation($"[UberClient::EstimatesService::GetEstimates] Received (EstimateInfo) from MockAPI... \n{estimateResponse}");
-
-                    var estimateResponseId = ServiceID.CreateServiceID(service).ToString();
-
-                    _logger.LogInformation($"[UberClient::EstimatesService::GetEstimates] Generated ServiceID: {estimateResponseId}");
-
-                    _productsApiClient.Configuration = new Configuration { AccessToken = await _accessTokenService.GetAccessTokenAsync(SessionToken, service) };
-
-                    var product = await _productsApiClient.ProductProductIdAsync(requestInstance.ProductId);
-
-                    if (product is null) { _logger.LogError("[UberClient::EstimatesService::GetEstimates] Product instance is NULL!"); }
-
-                    _logger.LogInformation($"[UberClient::EstimatesService::GetEstimates] Received (Product) from MockAPI... \n{product}");
-
-                    // Write an InternalAPI model back
-                    var estimateModel = new EstimateModel()
-                    {
-                        EstimateId = estimateResponseId,
-                        CreatedTime = Google.Protobuf.WellKnownTypes.Timestamp.FromDateTime(DateTime.Now.ToUniversalTime()),
-                        InvalidTime = Google.Protobuf.WellKnownTypes.Timestamp.FromDateTime(DateTime.Now.AddMinutes(5).ToUniversalTime()),
-                        PriceDetails = new CurrencyModel
-                        {
-                            Price = (double)estimateResponse.Price,
-                            Currency = estimateResponse.Currency,
-                        },
-                        Distance = estimateResponse.Distance,
-                        Seats = product!.Shared ? request.Seats : product.Capacity,
-                        RequestUrl = $"https://uber.mock/client_id={clientId}&action=setPickup&pickup[latitude]={request.StartPoint.Latitude}&pickup[longitude]={request.StartPoint.Longitude}&dropoff[latitude]={request.EndPoint.Latitude}&dropoff[longitude]={request.EndPoint.Longitude}&product_id={requestInstance.ProductId}",
-                        DisplayName = product.DisplayName,
-                    };
-
-                    estimateModel.WayPoints.Add(request.StartPoint);
-                    estimateModel.WayPoints.Add(request.EndPoint);
-
-                    _logger.LogInformation($"[UberClient::EstimatesService::GetEstimates] Adding (EstimateCache) to the cache...");
-
-                    await _cache.SetAsync(estimateResponseId, new EstimateCache
-                    {
-                        EstimateInfo = estimateResponse,
-                        GetEstimatesRequest = request,
-                        ProductId = Guid.Parse(estimateResponseId)
-                    }, options);
-
-                    _logger.LogInformation($"[UberClient::EstimatesService::GetEstimates] Sending (EstimateModel) back to caller...");
-
-                    await responseStream.WriteAsync(estimateModel);
-                    await Task.Delay(TimeSpan.FromSeconds(1), context.CancellationToken);
+                    _logger.LogError("[UberClient::EstimatesService::GetEstimates] AccessToken is NULL.");
+                    continue;
                 }
+
+                RequestsEstimateRequest requestInstance = new()
+                {
+                    ProductId = service.ToString(),
+                    StartLatitude = (decimal)request.StartPoint.Latitude,
+                    StartLongitude = (decimal)request.StartPoint.Longitude,
+                    StartPlaceId = "START",
+                    EndLatitude = (decimal)request.EndPoint.Latitude,
+                    EndLongitude = (decimal)request.EndPoint.Longitude,
+                    EndPlaceId = "END",
+                    SeatCount = request.Seats
+                };
+
+                _logger.LogInformation($"[UberClient::EstimatesService::GetEstimates] Sending (RequestsEstimate) to MockAPI... \n{requestInstance}");
+
+                var estimateResponse = EstimateInfo.FromEstimateResponse(await _requestsApiClient.RequestsEstimateAsync(requestInstance));
+
+                _logger.LogInformation($"[UberClient::EstimatesService::GetEstimates] Received (EstimateInfo) from MockAPI... \n{estimateResponse}");
+
+                var estimateResponseId = ServiceID.CreateServiceID(service).ToString();
+
+                _logger.LogInformation($"[UberClient::EstimatesService::GetEstimates] Generated ServiceID: {estimateResponseId}");
+
+                _productsApiClient.Configuration = new Configuration { AccessToken = await _accessTokenService.GetAccessTokenAsync(SessionToken, service) };
+
+                var product = await _productsApiClient.ProductProductIdAsync(requestInstance.ProductId);
+
+                if (product is null) { _logger.LogError("[UberClient::EstimatesService::GetEstimates] Product instance is NULL!"); }
+
+                _logger.LogInformation($"[UberClient::EstimatesService::GetEstimates] Received (Product) from MockAPI... \n{product}");
+
+                // Write an InternalAPI model back
+                var estimateModel = new EstimateModel()
+                {
+                    EstimateId = estimateResponseId,
+                    CreatedTime = Google.Protobuf.WellKnownTypes.Timestamp.FromDateTime(DateTime.Now.ToUniversalTime()),
+                    InvalidTime = Google.Protobuf.WellKnownTypes.Timestamp.FromDateTime(DateTime.Now.AddMinutes(5).ToUniversalTime()),
+                    PriceDetails = new CurrencyModel
+                    {
+                        Price = (double)estimateResponse.Price,
+                        Currency = estimateResponse.Currency,
+                    },
+                    Distance = estimateResponse.Distance,
+                    Seats = product!.Shared ? request.Seats : product.Capacity,
+                    RequestUrl = $"https://uber.mock/client_id={clientId}&action=setPickup&pickup[latitude]={request.StartPoint.Latitude}&pickup[longitude]={request.StartPoint.Longitude}&dropoff[latitude]={request.EndPoint.Latitude}&dropoff[longitude]={request.EndPoint.Longitude}&product_id={requestInstance.ProductId}",
+                    DisplayName = product.DisplayName,
+                };
+
+                estimateModel.WayPoints.Add(request.StartPoint);
+                estimateModel.WayPoints.Add(request.EndPoint);
+
+                _logger.LogInformation($"[UberClient::EstimatesService::GetEstimates] Adding (EstimateCache) to the cache...");
+
+                await _cache.SetAsync(estimateResponseId, new EstimateCache
+                {
+                    EstimateInfo = estimateResponse,
+                    GetEstimatesRequest = request,
+                    ProductId = Guid.Parse(estimateResponseId)
+                }, options);
+
+                _logger.LogInformation($"[UberClient::EstimatesService::GetEstimates] Sending (EstimateModel) back to caller...");
+
+                await responseStream.WriteAsync(estimateModel);
+                await Task.Delay(TimeSpan.FromSeconds(1), context.CancellationToken);
             }
         }
 
