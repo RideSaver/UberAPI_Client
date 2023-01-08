@@ -13,19 +13,16 @@ var builder = WebApplication.CreateBuilder(args);
 
 var redisConfig = new ConfigurationOptions()
 {
-    EndPoints =
-        {
-            { "uber-redis", 6379 }
-        },
-    KeepAlive = 180,
+    EndPoints = { { "uber-redis", 6379 } },
     Password = "a-very-complex-password-here",
+    ConnectRetry = 3,
+    KeepAlive = 180,
     SyncTimeout = 15000,
     ConnectTimeout = 15000,
     AbortOnConnectFail = false,
+    AllowAdmin = true,
     Ssl = false,
     SslProtocols = System.Security.Authentication.SslProtocols.Tls12,
-    ConnectRetry = 3,
-    AllowAdmin = true,
     ReconnectRetryPolicy = new ExponentialRetry(5000, 10000),
 };
 

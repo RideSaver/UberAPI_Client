@@ -1,5 +1,4 @@
 using InternalAPI;
-using Grpc.Net.Client;
 using ByteString = Google.Protobuf.ByteString;
 using UberClient.Interface;
 
@@ -22,7 +21,7 @@ namespace UberClient.Internal
             {
                 Id = ByteString.CopyFrom(Guid.Parse(id).ToByteArray()),
                 Name = name,
-                ClientName = "uber",
+                ClientName = "Uber",
             };
 
             foreach (var feature in features)
@@ -30,7 +29,7 @@ namespace UberClient.Internal
                 request.Features.Add(ServiceFeatures.ProfessionalDriver);
             }
 
-            _logger.LogDebug($"[UberClient::ServicesService::RegisterServiceRequest] Registering [{name}] service...");
+            _logger.LogDebug($"[UberClient::ServicesService::RegisterService] Registering [{name}] service...");
             await _services.RegisterServiceAsync(request);
         }
 
@@ -50,7 +49,7 @@ namespace UberClient.Internal
                 ServiceFeatures.ProfessionalDriver
             });
 
-            _logger.LogInformation("[UberClient::ServicesService::RegisterServiceRequest] Services Registeration complete.");
+            _logger.LogInformation("[UberClient::ServicesService::RegisterServiceRequest] Services Registeration complete...");
         }
 
         public async Task StartAsync(CancellationToken cancellationToken)
