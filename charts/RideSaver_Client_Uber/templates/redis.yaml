@@ -3,7 +3,7 @@ kind: StatefulSet
 metadata:
   name: {{ include "UberClient.fullname" . }}-redis
   labels:
-    {{ include "UberClient.selectorLabels" . | nindent 6 }}
+    {{ include "UberClient.selectorLabels" . | nindent 4 }}
     app: redis
 spec:
   serviceName: {{ include "UberClient.fullname" . }}-redis
@@ -15,7 +15,7 @@ spec:
   template:
     metadata:
       labels:
-        {{ include "UberClient.selectorLabels" . | nindent 6 }}
+        {{ include "UberClient.selectorLabels" . | nindent 8 }}
         app: redis
     spec:
       initContainers:
