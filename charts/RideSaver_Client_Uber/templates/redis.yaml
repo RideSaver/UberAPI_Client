@@ -79,7 +79,9 @@ spec:
             limits:
               {{ omit . "storage" | toYaml | nindent 14 }}
             {{- end -}}
-            {{ omit . "requests" "limits" | toYaml | nindent 12 }}
+            {{ if omit . "requests" "limits" }}
+            {{ omit . "requests" "limits" | toYaml "omitempty" | nindent 12 }}
+            {{ end }}
           {{ end }}
       volumes:
         - name: node-config
