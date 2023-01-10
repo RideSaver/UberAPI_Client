@@ -71,7 +71,15 @@ spec:
               mountPath: /certs
           {{ with .Values.redis.resources }}
           resources:
-            {{ . | toYaml | nindent 12 }}
+            {{ with .requests }}
+            requests:
+              {{ omit . "storage" | toYaml | nindent 14 }}
+            {{- end -}}
+            {{ with .limits }}
+            limits:
+              {{ omit . "storage" | toYaml | nindent 14 }}
+            {{- end -}}
+            {{ omit . "requests" "limits" | toYaml | nindent 12 }}
           {{ end }}
       volumes:
         - name: node-config
