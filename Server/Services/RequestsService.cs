@@ -99,7 +99,13 @@ namespace UberClient.Services
                 EndLongitude = (float)cacheEstimate.GetEstimatesRequest.EndPoint.Longitude,
             };
 
-            var responseInstance = await _requestsApiClient.CreateRequestsAsync(requests);
+            RequestId responseInstance;
+            try {
+                responseInstance = await _requestsApiClient.CreateRequestsAsync(requests);
+            } catch (ApiException exception) {
+                _logger.LogError($"HTTP Error {exception.ErrorCode}, with data:\n{exception.ErrorContent}");
+                throw exception;
+            }
 
             cacheEstimate.RequestId = Guid.Parse(responseInstance._RequestId);
 
