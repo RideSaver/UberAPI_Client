@@ -84,6 +84,20 @@
             {{/pattern}}
             {{/isEnum}}
             {{/hasValidation}}
+
+            {{^isInherited}}
+            {{^isReadOnly}}
+            {{#required}}
+            {{^vendorExtensions.x-csharp-value-type}}
+            // to ensure "{{#lambda.camelcase_param}}{{name}}{{/lambda.camelcase_param}}" is required (not null)
+            if ({{#lambda.camelcase_param}}{{name}}{{/lambda.camelcase_param}} == null)
+            {
+                yield return new System.ComponentModel.DataAnnotations.ValidationResult("{{#lambda.camelcase_param}}{{name}}{{/lambda.camelcase_param}} is a required property for {{classname}} and cannot be null");
+            }
+            {{/vendorExtensions.x-csharp-value-type}}
+            {{/required}}
+            {{/isReadOnly}}
+            {{/isInherited}}
             {{/vars}}
             yield break;
         }

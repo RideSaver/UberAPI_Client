@@ -86,10 +86,7 @@ namespace UberClient.Services
 
             _requestsApiClient.Configuration = new Configuration { AccessToken = await _accessTokenService.GetAccessTokenAsync(SessionToken, cacheEstimate.ProductId.ToString()), };
 
-            UberAPI.Client.Model.CreateRequests requests = new(
-                cacheEstimate.EstimateInfo!.FareId!,
-                cacheEstimate.ProductId.ToString()
-            )
+            UberAPI.Client.Model.CreateRequests requests = new()
             {
                 FareId = cacheEstimate.EstimateInfo!.FareId!,
                 ProductId = cacheEstimate.ProductId.ToString(),
@@ -98,6 +95,8 @@ namespace UberClient.Services
                 EndLatitude = (float)cacheEstimate.GetEstimatesRequest.EndPoint.Latitude,
                 EndLongitude = (float)cacheEstimate.GetEstimatesRequest.EndPoint.Longitude,
             };
+
+            _logger.LogInformation($"Create Requests: {requests.ToJSON()}");
 
             UberAPI.Client.Model.RequestId responseInstance;
             try {
