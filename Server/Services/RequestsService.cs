@@ -96,7 +96,7 @@ namespace UberClient.Services
                 EndLongitude = (float)cacheEstimate.GetEstimatesRequest.EndPoint.Longitude,
             };
 
-            _logger.LogInformation($"Create Requests: {requests.ToJSON()}");
+            _logger.LogInformation($"Create Requests: {requests.ToJson()}");
 
             UberAPI.Client.Model.RequestId responseInstance;
             try {
