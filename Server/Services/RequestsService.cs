@@ -86,7 +86,10 @@ namespace UberClient.Services
 
             _requestsApiClient.Configuration = new Configuration { AccessToken = await _accessTokenService.GetAccessTokenAsync(SessionToken, cacheEstimate.ProductId.ToString()), };
 
-            UberAPI.Client.Model.CreateRequests requests = new()
+            UberAPI.Client.Model.CreateRequests requests = new(
+                cacheEstimate.EstimateInfo!.FareId!,
+                cacheEstimate.ProductId.ToString()
+            )
             {
                 FareId = cacheEstimate.EstimateInfo!.FareId!,
                 ProductId = cacheEstimate.ProductId.ToString(),
@@ -128,10 +131,10 @@ namespace UberClient.Services
             string accessToken = await _accessTokenService.GetAccessTokenAsync(SessionToken, cacheEstimate.ProductId.ToString());
 
             _requestsApiClient.Configuration = new Configuration { AccessToken = accessToken, };
-                
+
             await _requestsApiClient.DeleteRequestsAsync(cacheEstimate.RequestId.ToString());
             _productsApiClient.Configuration = new Configuration { AccessToken = accessToken, };
-                
+
             var product = await _productsApiClient.ProductProductIdAsync(cacheEstimate.ProductId.ToString());
 
             return new CurrencyModel
