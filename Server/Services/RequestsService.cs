@@ -99,10 +99,10 @@ namespace UberClient.Services
                 EndLongitude = (float)cacheEstimate.GetEstimatesRequest.EndPoint.Longitude,
             };
 
-            RequestId responseInstance;
+            UberAPI.Client.Model.RequestId responseInstance;
             try {
                 responseInstance = await _requestsApiClient.CreateRequestsAsync(requests);
-            } catch (ApiException exception) {
+            } catch (UberAPI.Client.Client.ApiException exception) {
                 _logger.LogError($"HTTP Error {exception.ErrorCode}, with data:\n{exception.ErrorContent}");
                 throw exception;
             }
