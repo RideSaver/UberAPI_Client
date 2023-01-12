@@ -38,7 +38,7 @@
         /// <value>{{.}}</value>
         {{/description}}
         {{^conditionalSerialization}}
-        [DataMember(Name = "{{baseName}}"{{#required}}, IsRequired = true{{/required}})]
+        [DataMember({{#required}}IsRequired = true{{/required}})]
         {{#deprecated}}
         [Obsolete]
         {{/deprecated}}
@@ -57,7 +57,7 @@
         {{/conditionalSerialization}}
         {{#conditionalSerialization}}
         {{#isReadOnly}}
-        [DataMember(Name = "{{baseName}}"{{#required}}, IsRequired = true{{/required}})]
+        [DataMember({{#required}}IsRequired = true{{/required}})]
         {{#deprecated}}
         [Obsolete]
         {{/deprecated}}
@@ -75,7 +75,7 @@
         {{/isReadOnly}}
 
         {{^isReadOnly}}
-        [DataMember(Name = "{{baseName}}"{{#required}}, IsRequired = true{{/required}})]
+        [DataMember({{#required}}IsRequired = true{{/required}})]
         {{#deprecated}}
         [Obsolete]
         {{/deprecated}}
@@ -199,7 +199,7 @@
         /// </summary>{{#description}}
         /// <value>{{.}}</value>{{/description}}
         {{^conditionalSerialization}}
-        [DataMember(Name = "{{baseName}}"{{#required}}, IsRequired = true{{/required}})]
+        [DataMember({{#required}}IsRequired = true{{/required}})]
         {{#isDate}}
         [JsonConverter(typeof(OpenAPIDateConverter))]
         {{/isDate}}
@@ -243,7 +243,7 @@
         {{#isDate}}
         [JsonConverter(typeof(OpenAPIDateConverter))]
         {{/isDate}}
-        [DataMember(Name = "{{baseName}}"{{#required}}, IsRequired = true{{/required}})]
+        [DataMember({{#required}}IsRequired = true{{/required}})]
         {{#deprecated}}
         [Obsolete]
         {{/deprecated}}
