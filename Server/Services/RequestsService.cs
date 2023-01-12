@@ -59,9 +59,10 @@ namespace UberClient.Services
 
             var responseInstance = await _requestsApiClient.CreateRequestsAsync(requestInstance);
 
+            // ADD REQUEST ID TO CACHE //
+
             if (responseInstance is null) { _logger.LogError("[UberClient::RequestService::PostRideRequest] RequestId is null!"); }
 
-            cacheEstimate.RequestId = Guid.Parse(responseInstance._RequestId.ToString());
             await _cache.SetAsync(request.EstimateId, cacheEstimate, options);
 
             return new RideModel()
