@@ -48,6 +48,7 @@ builder.Services.AddStackExchangeRedisCache(options =>
     };
 });
 
+
 builder.Services.AddDataProtection().SetApplicationName("UberClient").PersistKeysToStackExchangeRedis(ConnectionMultiplexer.Connect(redisConfig), "DataProtection-Keys");
 
 builder.Services.AddMvc();

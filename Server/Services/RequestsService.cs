@@ -9,6 +9,7 @@ using RequestsApi = UberAPI.Client.Api.RequestsApi;
 using ProductsApi = UberAPI.Client.Api.ProductsApi;
 using Configuration = UberAPI.Client.Client.Configuration;
 using RequestId = UberAPI.Client.Model.RequestId;
+using RideRequest = UberAPI.Client.Model.CreateRequests;
 
 namespace UberClient.Services
 {
@@ -43,22 +44,20 @@ namespace UberClient.Services
             DistributedCacheEntryOptions options = new DistributedCacheEntryOptions() { AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(24)};
             _requestsApiClient.Configuration = new Configuration { AccessToken = await _accessTokenService.GetAccessTokenAsync(SessionToken, serviceID), };
 
-            UberAPI.Client.Model.CreateRequests requests = new()
-            {
-                FareId = Guid.NewGuid().ToString(),
-                ProductId = cacheEstimate.ProductId.ToString(),
-                StartLatitude = (float)cacheEstimate.GetEstimatesRequest!.StartPoint.Latitude,
-                StartLongitude = (float)cacheEstimate.GetEstimatesRequest.StartPoint.Longitude,
-                EndLatitude = (float)cacheEstimate.GetEstimatesRequest.EndPoint.Latitude,
-                EndLongitude = (float)cacheEstimate.GetEstimatesRequest.EndPoint.Longitude,
+            var requestInstance = new RideRequest(fareId: Guid.NewGuid().ToString(), productId: cacheEstimate.ProductId.ToString(),
+                startLatitude: (float)cacheEstimate.GetEstimatesRequest!.StartPoint.Latitude,
+                startLongitude: (float)cacheEstimate.GetEstimatesRequest.StartPoint.Longitude,
+                endLatitude: (float)cacheEstimate.GetEstimatesRequest.EndPoint.Latitude,
+                endLongitude: (float)cacheEstimate.GetEstimatesRequest.EndPoint.Longitude)
+                {
                 SurgeConfirmationId = Guid.NewGuid().ToString(),
-                PaymentMethodId= Guid.NewGuid().ToString(),
+                PaymentMethodId = Guid.NewGuid().ToString(),
                 Seats = cacheEstimate.GetEstimatesRequest.Seats
-            };
+                };
 
-            _logger.LogInformation($"Create Requests: {requests.ToJson()}");
+            _logger.LogInformation($"CreateRequest JSON: {requestInstance.ToJson()}");
 
-            RequestId responseInstance = await _requestsApiClient.CreateRequestsAsync(requests);
+            var responseInstance = await _requestsApiClient.CreateRequestsAsync(requestInstance);
 
             if (responseInstance is null) { _logger.LogError("[UberClient::RequestService::PostRideRequest] RequestId is null!"); }
 
