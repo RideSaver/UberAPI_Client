@@ -1,5 +1,4 @@
-
-namespace UberClient.Services
+namespace UberClient.Internal
 {
     public class CertificateStatusService : BackgroundService
     {
@@ -7,7 +6,7 @@ namespace UberClient.Services
         private readonly IHostApplicationLifetime _applicationLifetime;
 
         private readonly FileSystemWatcher _fileWatcher;
-        
+
         public CertificateStatusService(ILogger<CertificateStatusService> logger, IHostApplicationLifetime applicationLifetime)
         {
             _fileWatcher = new FileSystemWatcher(@"/certs/");

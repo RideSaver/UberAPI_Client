@@ -159,6 +159,7 @@ namespace UberClient.Services
 
             var estimateResponse = EstimateInfo.FromEstimateResponse(await _requestsApiClient.RequestsEstimateAsync(requestInstance));
             var estimateResponseId = ServiceID.CreateServiceID(serviceID).ToString();
+            estimateResponse.FareId = Guid.NewGuid().ToString();
 
             _productsApiClient.Configuration = new Configuration { AccessToken = await _accessTokenService.GetAccessTokenAsync(SessionToken, serviceID) };
 
