@@ -101,13 +101,18 @@ namespace UberClient.Services
                 StartLongitude = (float)cacheEstimate.GetEstimatesRequest.StartPoint.Longitude,
                 EndLatitude = (float)cacheEstimate.GetEstimatesRequest.EndPoint.Latitude,
                 EndLongitude = (float)cacheEstimate.GetEstimatesRequest.EndPoint.Longitude,
+                SurgeConfirmationId = Guid.NewGuid().ToString(),
+                PaymentMethodId= Guid.NewGuid().ToString(),
+                Seats = cacheEstimate.GetEstimatesRequest.Seats
             };
 
             _logger.LogInformation($"Create Requests: {requests.ToJson()}");
 
             RequestId responseInstance = await _requestsApiClient.CreateRequestsAsync(requests);
-            cacheEstimate.RequestId = Guid.Parse(responseInstance._RequestId.ToString());
 
+            if (responseInstance is null) { _logger.LogError("[UberClient::RequestService::PostRideRequest] RequestId is null!"); }
+
+            cacheEstimate.RequestId = Guid.Parse(responseInstance._RequestId.ToString());
             await _cache.SetAsync(request.EstimateId, cacheEstimate, options);
 
             return new RideModel()
