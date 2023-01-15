@@ -119,7 +119,7 @@ namespace UberClient.Services
             return new RideModel()
             {
                 RideId = estimateCacheId,
-                EstimatedTimeOfArrival = Google.Protobuf.WellKnownTypes.Timestamp.FromDateTime(DateTime.UtcNow.AddSeconds(responseInstance.Pickup.Eta)),
+                EstimatedTimeOfArrival = Google.Protobuf.WellKnownTypes.Timestamp.FromDateTime((DateTime.UtcNow.AddSeconds(responseInstance.Pickup.Eta)).ToUniversalTime()),
                 RideStage = getStageFromStatus(responseInstance.Status),
                 RiderOnBoard = false,
                 Price = new CurrencyModel
