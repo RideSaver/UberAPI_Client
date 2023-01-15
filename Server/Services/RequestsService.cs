@@ -110,6 +110,8 @@ namespace UberClient.Services
             var serviceID = cacheEstimate.ProductId.ToString();
             var requestID = cacheEstimate.RequestId.ToString();
 
+            _logger.LogInformation($"RequestID: {requestID}");
+
             _requestsApiClient.Configuration = new Configuration { AccessToken = await _accessTokenService.GetAccessTokenAsync(SessionToken!, serviceID) };
 
             var responseInstance = await _requestsApiClient.RequestRequestIdAsync(requestID);
