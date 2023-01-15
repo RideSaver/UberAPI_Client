@@ -4,13 +4,12 @@ using System.Security.Cryptography.X509Certificates;
 using InternalAPI;
 using UberClient.Interface;
 using UberClient.Internal;
-using UberClient.Filters;
-using Microsoft.ApplicationInsights.Extensibility;
 using StackExchange.Redis;
 using Microsoft.AspNetCore.DataProtection;
 
 var builder = WebApplication.CreateBuilder(args);
 
+//---------------------------------------------------[REDIS CACHE CONFIG]-------------------------------------------------------------//
 var redisConfig = new ConfigurationOptions()
 {
     EndPoints = { { "uber-redis", 6379 } },
@@ -48,8 +47,9 @@ builder.Services.AddStackExchangeRedisCache(options =>
     };
 });
 
-
 builder.Services.AddDataProtection().SetApplicationName("UberClient").PersistKeysToStackExchangeRedis(ConnectionMultiplexer.Connect(redisConfig), "DataProtection-Keys");
+
+//------------------------------------------------------------------------------------------------------------------------------------//
 
 builder.Services.AddMvc();
 builder.Services.AddHttpClient();
@@ -59,7 +59,6 @@ builder.Services.AddHealthChecks();
 
 builder.Services.AddTransient<IAccessTokenService, AccessTokenService>();
 builder.Services.AddSingleton<IServicesService, ServicesService>();
-builder.Services.AddSingleton<ITelemetryInitializer, FilterHealthchecksTelemetryInitializer>();
 builder.Services.AddSingleton<ICacheProvider, CacheProvider>();
 
 builder.Services.AddHostedService<ServicesService>();
@@ -67,8 +66,10 @@ builder.Services.AddHostedService<CertificateStatusService>();
 
 builder.Services.AddGrpcClient<Services.ServicesClient>(o =>
 {
-    HttpClientHandler httpHandler = new();
-    httpHandler.ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator;
+    HttpClientHandler httpHandler = new()
+    {
+        ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
+    };
     o.Address = new Uri($"https://services.api:443");
 });
 
@@ -88,11 +89,9 @@ app.UseRouting();
 app.UseHttpsRedirection();
 app.MapControllers();
 app.MapHealthChecks("/healthz");
-
 app.UseEndpoints(endpoints =>
 {
     endpoints.MapGrpcService<EstimatesService>();
     endpoints.MapGrpcService<RequestsService>();
 });
-
 app.Run();

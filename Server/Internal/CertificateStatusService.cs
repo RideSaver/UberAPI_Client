@@ -9,7 +9,7 @@ namespace UberClient.Internal
 
         public CertificateStatusService(ILogger<CertificateStatusService> logger, IHostApplicationLifetime applicationLifetime)
         {
-            _fileWatcher = new FileSystemWatcher(@"/certs/");
+            _fileWatcher = new FileSystemWatcher(@"/certs");
             _logger = logger;
             _applicationLifetime = applicationLifetime;
         }

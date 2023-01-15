@@ -35,16 +35,19 @@ namespace UberClient.Services
 
         public override async Task<RideModel> PostRideRequest(PostRideRequestModel request, ServerCallContext context)
         {
+            // Extract the JWT Token from the request-headers to be used for the UserAccessToken
             var SessionToken = "" + _httpContextAccessor.HttpContext!.Request.Headers["token"];
             var estimateId = request.EstimateId.ToString();
-            var cacheEstimate = await _cache.GetAsync<EstimateCache>(estimateId);
-            var serviceID = cacheEstimate!.ProductId.ToString();
 
+            // Retrieve the Estimate instance from the cache for the EstimateID 
+            var cacheEstimate = await _cache.GetAsync<EstimateCache>(estimateId);
             if (cacheEstimate is null) { throw new ArgumentNullException($"[UberClient::RequestService::PostRideRequest] {nameof(cacheEstimate)}"); }
+            var serviceID = cacheEstimate!.ProductId.ToString();
 
             DistributedCacheEntryOptions options = new DistributedCacheEntryOptions() { AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(24)};
             _requestsApiClient.Configuration = new Configuration { AccessToken = await _accessTokenService.GetAccessTokenAsync(SessionToken, serviceID), };
 
+            // Create a new instance of RideRequest to send to the MockAPI.
             RideRequest requestInstance = new(
             fareId: Guid.NewGuid().ToString(),
             productId: cacheEstimate.ProductId.ToString(),
@@ -58,13 +61,15 @@ namespace UberClient.Services
                 Seats = cacheEstimate.GetEstimatesRequest.Seats
             };
 
+            // Make the request to the MockAPI to recieve back the RequestID instance.
             var responseInstance = await _requestsApiClient.CreateRequestsAsync(requestInstance);
-
             if (responseInstance is null) { throw new ArgumentNullException($"[UberClient::RequestService::PostRideRequest] {nameof(responseInstance)}"); }
 
+            // Add the new Request ID to the Estimate instance & reinsert it back into the cache.
             cacheEstimate.RequestId = Guid.Parse(responseInstance._RequestId);
             await _cache.SetAsync(request.EstimateId, cacheEstimate, options);
 
+            // Create a new RideModel instance with the data we recieved to send it back to the RequestsAPI.
             return new RideModel()
             {
                 RideId = request.EstimateId.ToString(),
@@ -76,7 +81,7 @@ namespace UberClient.Services
                     DisplayName = responseInstance.Drivers.Name,
                     LicensePlate = responseInstance.Vehicle.LicensePlate,
                     CarPicture = responseInstance.Vehicle.PictureUrl,
-                    CarDescription = "Vehicle Description",
+                    CarDescription = "RideShare Vehicle",
                     DriverPronounciation = responseInstance.Drivers.Name
                 },
                 DriverLocation = new LocationModel()
