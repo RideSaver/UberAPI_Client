@@ -107,11 +107,12 @@ namespace UberClient.Services
             var estimateCacheId = request.RideId.ToString();
             var cacheEstimate = await _cache.GetAsync<EstimateCache>(estimateCacheId);
             if (cacheEstimate is null) { throw new ArgumentNullException(nameof(cacheEstimate)); }
-            var serviceID = cacheEstimate!.ProductId.ToString();
+            var serviceID = cacheEstimate.ProductId.ToString();
+            var requestID = cacheEstimate.RequestId.ToString();
 
             _requestsApiClient.Configuration = new Configuration { AccessToken = await _accessTokenService.GetAccessTokenAsync(SessionToken!, serviceID) };
 
-            var responseInstance = await _requestsApiClient.RequestRequestIdAsync(estimateCacheId);
+            var responseInstance = await _requestsApiClient.RequestRequestIdAsync(requestID);
             if (responseInstance is null) { throw new ArgumentNullException(nameof(responseInstance)); }
 
             // Write an InternalAPI model back
@@ -148,7 +149,8 @@ namespace UberClient.Services
             var SessionToken = "" + _httpContextAccessor.HttpContext!.Request.Headers["token"];
             if (SessionToken is null) { throw new ArgumentNullException(nameof(SessionToken)); }
 
-            var cacheEstimate = await _cache.GetAsync<EstimateCache> (request.RideId);
+            var estimateCacheId = request.RideId.ToString();
+            var cacheEstimate = await _cache.GetAsync<EstimateCache> (estimateCacheId);
             if (cacheEstimate is null) { throw new ArgumentNullException(nameof(cacheEstimate)); }
             var serviceID = cacheEstimate.ProductId.ToString();
             var requestID = cacheEstimate.RequestId.ToString();
