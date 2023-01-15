@@ -1,11 +1,11 @@
 using Grpc.Core;
 using InternalAPI;
-using Microsoft.Extensions.Caching.Distributed;
 using UberClient.Models;
 using UberClient.Extensions;
 using UberClient.Interface;
 using DataAccess.Services;
 using UberAPI.Client.Model;
+using Microsoft.Extensions.Caching.Distributed;
 
 using RequestsApi = UberAPI.Client.Api.RequestsApi;
 using ProductsApi = UberAPI.Client.Api.ProductsApi;
@@ -17,7 +17,7 @@ namespace UberClient.Services
     public class EstimatesService : Estimates.EstimatesBase
     {
         private readonly IDistributedCache _cache;
-        private readonly IAccessTokenService _accessTokenService;
+        private readonly IAccessTokenService _tokenService;
         private readonly IHttpContextAccessor _httpContextAccessor;
 
         private readonly RequestsApi _requestsApiClient;
@@ -26,7 +26,7 @@ namespace UberClient.Services
 
         public EstimatesService(ILogger<EstimatesService> logger, IDistributedCache cache, IAccessTokenService accessTokenService, IHttpContextAccessor httpContextAccessor)
         {
-            _accessTokenService = accessTokenService;
+            _tokenService = accessTokenService;
             _httpContextAccessor = httpContextAccessor;
             _logger = logger;
             _cache = cache;
@@ -36,21 +36,26 @@ namespace UberClient.Services
         }
         public override async Task GetEstimates(GetEstimatesRequest request, IServerStreamWriter<EstimateModel> responseStream, ServerCallContext context)
         {
-            string clientId = "al0I63Gjwk3Wsmhq_EL8_HxB8qWlO7yY"; // Placeholder value to mimick the client-ID recieved from 3rd party APIs.
-            var SessionToken = "" + _httpContextAccessor.HttpContext!.Request.Headers["token"]; // Extract the JWT token from the request-headers for the UserAccessToken requests.
-            var servicesList = request.Services.ToList(); // List of service GUIDS. 
+            // clientID recieved from the MockAPI.
+            string clientId = "al0I63Gjwk3Wsmhq_EL8_HxB8qWlO7yY"; 
+
+            // Extract the JWT token from the request-headers for the current user.
+            var SessionToken = "" + _httpContextAccessor.HttpContext!.Request.Headers["token"];
+            if(SessionToken is null) { throw new ArgumentNullException(nameof(SessionToken)); }
 
             // Create the config-options for the redis-cache.
             DistributedCacheEntryOptions options = new() { AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(24) , SlidingExpiration = TimeSpan.FromHours(5) };
 
             // Loop through the list of service-IDs recieved within the request & make an estimate-request to the MockAPI for each appropriaate service ID
+            var servicesList = request.Services.ToList(); // List of service GUIDS. 
             foreach (var service in servicesList)
             {
                 ServiceLinker.ServiceIDs.TryGetValue(service, out string? serviceName); // Extract the service-name from the ServiceLinker Dictionary.
                 if (serviceName is null) continue; // Skip the current loop-iteration if there is no valid service-name matching the service-ID
 
                 // Retrieve the user-access-token from IdentityService for the current-user.
-                _requestsApiClient.Configuration = new Configuration { AccessToken = await _accessTokenService.GetAccessTokenAsync(SessionToken, service.ToString()) };
+                _requestsApiClient.Configuration = new Configuration { AccessToken = await _tokenService.GetAccessTokenAsync(SessionToken, service.ToString()) };
+                if (_requestsApiClient.Configuration.AccessToken is null) { throw new ArgumentNullException(nameof(_requestsApiClient.Configuration.AccessToken)); }
 
                 // Create a new instance of (RequestsEstimateRequest) to be sent to the MockAPI.
                 RequestsEstimateRequest requestInstance = new()
@@ -67,20 +72,23 @@ namespace UberClient.Services
 
                 // Make an Estimate request to the MockAPI
                 var estimateResponse = EstimateInfo.FromEstimateResponse(await _requestsApiClient.RequestsEstimateAsync(requestInstance));
-                if(estimateResponse is null) { throw new ArgumentNullException($"[UberClient::EstimatesService::GetEstimates] {nameof(estimateResponse)}"); }
-                var estimateResponseId = ServiceID.CreateServiceID(service).ToString(); // Extract the EstimateID from the response.
+                if(estimateResponse is null) { throw new ArgumentNullException(nameof(estimateResponse)); }
+
+                // Generate the intenral service ID used to hash all the services from different clients. 
+                var internalServiceID = ServiceID.CreateServiceID(service).ToString(); // Extract the EstimateID from the response.
 
                 // Retrieve the user-access-token from IdentityService for the current-user.
-                _productsApiClient.Configuration = new Configuration { AccessToken = await _accessTokenService.GetAccessTokenAsync(SessionToken, service) };
+                _productsApiClient.Configuration = new Configuration { AccessToken = await _tokenService.GetAccessTokenAsync(SessionToken, service) };
+                if(_productsApiClient.Configuration.AccessToken is null) { throw new ArgumentNullException(nameof(_productsApiClient.Configuration.AccessToken)); }
 
                 // Make a Product request to the MockAPI
                 var product = await _productsApiClient.ProductProductIdAsync(requestInstance.ProductId);
-                if (product is null) { throw new ArgumentNullException($"[UberClient::EstimatesService::GetEstimates] {nameof(product)}"); }
+                if (product is null) { throw new ArgumentNullException(nameof(product)); }
 
                 // Write an InternalAPI model back
                 var estimateModel = new EstimateModel()
                 {
-                    EstimateId = estimateResponseId,
+                    EstimateId = internalServiceID,
                     CreatedTime = Google.Protobuf.WellKnownTypes.Timestamp.FromDateTime(DateTime.Now.ToUniversalTime()),
                     InvalidTime = Google.Protobuf.WellKnownTypes.Timestamp.FromDateTime(DateTime.Now.AddMinutes(5).ToUniversalTime()),
                     Distance = estimateResponse.Distance,
@@ -100,7 +108,7 @@ namespace UberClient.Services
                 {
                     EstimateInfo = estimateResponse,
                     GetEstimatesRequest = request,
-                    ProductId = Guid.Parse(estimateResponseId),
+                    ProductId = Guid.Parse(service),
                     CancellationCost = new CurrencyModel
                     {
                         Currency = "USD",
@@ -109,7 +117,7 @@ namespace UberClient.Services
                 };
 
                 // Add the currrent Estimate instance to the redis-cache & return the data to EstimatesAPI.
-                await _cache.SetAsync(estimateResponseId, cacheInstance, options);
+                await _cache.SetAsync(internalServiceID, cacheInstance, options);
                 await responseStream.WriteAsync(estimateModel);
                 await Task.Delay(TimeSpan.FromSeconds(1));
             }
@@ -117,6 +125,7 @@ namespace UberClient.Services
 
         public override async Task<EstimateModel> GetEstimateRefresh(GetEstimateRefreshRequest request, ServerCallContext context)
         {
+            // clientID recieved from the MockAPI.
             string clientId = "al0I63Gjwk3Wsmhq_EL8_HxB8qWlO7yY";
 
             // Extract the JWT token from the request headers.
@@ -124,20 +133,22 @@ namespace UberClient.Services
             if(SessionToken is null) { throw new ArgumentNullException(nameof(SessionToken)); }
 
             // Get the EstimateID used as key for the estimate stored in cache.
-            var estimateID = request.EstimateId.ToString();
-            if(estimateID is null) { throw new ArgumentNullException(nameof(estimateID)); }
+            var internalServiceID = request.EstimateId.ToString();
+            if(internalServiceID is null) { throw new ArgumentNullException(nameof(internalServiceID)); }
 
             // Extract the Estimate instance from the redis Cache.
-            var estimateCache = await _cache.GetAsync<EstimateCache>(estimateID);
-            if (estimateCache is null) { throw new ArgumentNullException($"[UberClient::EstimatesService::GetEstimateRefresh] {nameof(estimateCache)}"); }
-            var estimateInstance = estimateCache!.GetEstimatesRequest;
-            var serviceID = estimateCache.ProductId.ToString();
+            var estimateCache = await _cache.GetAsync<EstimateCache>(internalServiceID);
+            if (estimateCache is null) { throw new ArgumentNullException(nameof(estimateCache)); }
+
+            var estimateInstance = estimateCache!.GetEstimatesRequest; // Estimate Instance 
+            var serviceID = estimateCache.ProductId.ToString(); // Service ID
 
             // Create the config-options for the redis-cache.
             DistributedCacheEntryOptions options = new() { AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(24), SlidingExpiration = TimeSpan.FromHours(5) };
 
             // Retrieve the user-access-token from IdentityService for the current user.
-            _requestsApiClient.Configuration = new Configuration { AccessToken = await _accessTokenService.GetAccessTokenAsync(SessionToken, serviceID) };
+            _requestsApiClient.Configuration = new Configuration { AccessToken = await _tokenService.GetAccessTokenAsync(SessionToken, serviceID) };
+            if(_requestsApiClient.Configuration.AccessToken is null) { throw new ArgumentNullException(nameof(_requestsApiClient.Configuration.AccessToken)); }
 
             // Create a new (RequestEstimateRquest) instance to be sent to the MockAPI
             var requestInstance = new RequestsEstimateRequest()
@@ -154,20 +165,20 @@ namespace UberClient.Services
 
             // Make an Estimate request to the MockAPI.
             var estimateResponse = EstimateInfo.FromEstimateResponse(await _requestsApiClient.RequestsEstimateAsync(requestInstance));
-            if (estimateResponse is null) { throw new ArgumentNullException($"[UberClient::EstimatesService::GetEstimates] {nameof(estimateResponse)}"); }
-            estimateResponse.FareId = Guid.NewGuid().ToString();
+            if (estimateResponse is null) { throw new ArgumentNullException(nameof(estimateResponse)); }
 
             // Retrieve the user-access-token from IdentityService for the current user.
-            _productsApiClient.Configuration = new Configuration { AccessToken = await _accessTokenService.GetAccessTokenAsync(SessionToken, serviceID) };
+            _productsApiClient.Configuration = new Configuration { AccessToken = await _tokenService.GetAccessTokenAsync(SessionToken, serviceID) };
+            if (_productsApiClient.Configuration.AccessToken is null) { throw new ArgumentNullException(nameof(_productsApiClient.Configuration.AccessToken)); }
 
             // Make a Product request to the MockAPI
             var product = await _productsApiClient.ProductProductIdAsync(serviceID);
-            if (product is null) { throw new ArgumentNullException($"[UberClient::EstimatesService::GetEstimateRefresh] {nameof(product)}"); }
+            if (product is null) { throw new ArgumentNullException(nameof(product)); }
 
             // Create an EstimateModel to be sent back to the EstimatesAPI.
             var estimateModel = new EstimateModel()
             {
-                EstimateId = estimateID,
+                EstimateId = internalServiceID,
                 CreatedTime = Google.Protobuf.WellKnownTypes.Timestamp.FromDateTime(DateTime.Now.ToUniversalTime()),
                 InvalidTime = Google.Protobuf.WellKnownTypes.Timestamp.FromDateTime(DateTime.Now.AddMinutes(5).ToUniversalTime()),
                 Distance = estimateResponse.Distance,
@@ -196,7 +207,7 @@ namespace UberClient.Services
             };
 
             // Add EstimateCache to the cache storage & return the estimate model to EstimatesAPI.
-            await _cache.SetAsync(estimateID, cacheInstance, options);
+            await _cache.SetAsync(internalServiceID, cacheInstance, options);
             return estimateModel;
         }
     }

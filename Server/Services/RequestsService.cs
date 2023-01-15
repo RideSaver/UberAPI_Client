@@ -1,20 +1,21 @@
 using Grpc.Core;
 using InternalAPI;
-using Microsoft.Extensions.Caching.Distributed;
 using UberClient.Models;
 using UberClient.Extensions;
 using UberClient.Interface;
+using Microsoft.Extensions.Caching.Distributed;
 
 using RequestsApi = UberAPI.Client.Api.RequestsApi;
 using Configuration = UberAPI.Client.Client.Configuration;
 using RideRequest = UberAPI.Client.Model.CreateRequests;
+using UberClient.Helper;
 
 namespace UberClient.Services
 {
     public class RequestsService : Requests.RequestsBase
     {
         private readonly IDistributedCache _cache;
-        private readonly IAccessTokenService _accessTokenService;
+        private readonly IAccessTokenService _tokenService;
         private readonly IHttpContextAccessor _httpContextAccessor;
 
         private readonly RequestsApi _requestsApiClient;
@@ -22,12 +23,11 @@ namespace UberClient.Services
 
         public RequestsService(ILogger<RequestsService> logger, IDistributedCache cache, IAccessTokenService accessTokenService, IHttpContextAccessor httpContextAccessor)
         {
-            _accessTokenService = accessTokenService;
+            _requestsApiClient = new RequestsApi();
+            _tokenService = accessTokenService;
             _httpContextAccessor = httpContextAccessor;
             _logger = logger;
             _cache = cache;
-
-            _requestsApiClient = new RequestsApi();
         }
 
         public override async Task<RideModel> PostRideRequest(PostRideRequestModel request, ServerCallContext context)
@@ -37,11 +37,11 @@ namespace UberClient.Services
             if (SessionToken is null) { throw new ArgumentNullException(nameof(SessionToken)); }
 
             // Get the EstimateID used as key to for the EstimateInstance stored in the cache.
-            var estimateId = request.EstimateId.ToString();
-            if (estimateId is null) { throw new ArgumentNullException(nameof(estimateId)); }
+            var internalServiceID = request.EstimateId.ToString();
+            if (internalServiceID is null) { throw new ArgumentNullException(nameof(internalServiceID)); }
 
             // Retrieve the Estimate instance from the cache for the EstimateID 
-            var cacheEstimate = await _cache.GetAsync<EstimateCache>(estimateId);
+            var cacheEstimate = await _cache.GetAsync<EstimateCache>(internalServiceID);
             if (cacheEstimate is null) { throw new ArgumentNullException(nameof(cacheEstimate)); }
             var serviceID = cacheEstimate!.ProductId.ToString();
 
@@ -49,7 +49,8 @@ namespace UberClient.Services
             var redisOptions = new DistributedCacheEntryOptions() { AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(24)};
 
             // Retrieve the user-access token from IdentityService for the current user.
-            _requestsApiClient.Configuration = new Configuration { AccessToken = await _accessTokenService.GetAccessTokenAsync(SessionToken, serviceID), };
+            _requestsApiClient.Configuration = new Configuration { AccessToken = await _tokenService.GetAccessTokenAsync(SessionToken, serviceID), };
+            if (_requestsApiClient.Configuration.AccessToken is null) { throw new ArgumentNullException(nameof(_requestsApiClient.Configuration.AccessToken)); }
 
             // Create a new instance of RideRequest to send to the MockAPI.
             RideRequest requestInstance = new(
@@ -71,14 +72,14 @@ namespace UberClient.Services
 
             // Add the new Request ID to the Estimate instance & reinsert it back into the cache.
             cacheEstimate.RequestId = Guid.Parse(responseInstance._RequestId);
-            await _cache.SetAsync(estimateId, cacheEstimate, redisOptions);
+            await _cache.SetAsync(internalServiceID, cacheEstimate, redisOptions);
 
             // Create a new RideModel instance with the data we recieved to send it back to the RequestsAPI.
             return new RideModel()
             {
-                RideId = estimateId,
+                RideId = internalServiceID,
                 EstimatedTimeOfArrival = Google.Protobuf.WellKnownTypes.Timestamp.FromDateTime((DateTime.Now.AddSeconds(responseInstance.Pickup.Eta)).ToUniversalTime()),
-                RideStage = getStageFromStatus(responseInstance.Status),
+                RideStage = Utility.getStageFromStatus(responseInstance.Status),
                 RiderOnBoard = false,
                 Driver = new DriverModel()
                 {
@@ -110,17 +111,18 @@ namespace UberClient.Services
             if(SessionToken is null) { throw new ArgumentNullException(nameof(SessionToken)); }
 
             // RideID used as the cache-instance key.
-            string estimateCacheId = request.RideId.ToString();
-            if(estimateCacheId is null) { throw new ArgumentNullException(nameof(estimateCacheId)); }
+            string internalServiceID = request.RideId.ToString();
+            if(internalServiceID is null) { throw new ArgumentNullException(nameof(internalServiceID)); }
 
             // Get the cache instance for the ride-request.
-            var cacheEstimate = await _cache.GetAsync<EstimateCache>(estimateCacheId);
+            var cacheEstimate = await _cache.GetAsync<EstimateCache>(internalServiceID);
             if (cacheEstimate is null) { throw new ArgumentNullException(nameof(cacheEstimate)); }
             string serviceID = cacheEstimate.ProductId.ToString();
             string requestID = cacheEstimate.RequestId.ToString();
 
             // Retrieve the user-access-token from IdentityService for the current user.
-            _requestsApiClient.Configuration = new Configuration { AccessToken = await _accessTokenService.GetAccessTokenAsync(SessionToken, serviceID) };
+            _requestsApiClient.Configuration = new Configuration { AccessToken = await _tokenService.GetAccessTokenAsync(SessionToken, serviceID) };
+            if (_requestsApiClient.Configuration.AccessToken is null) { throw new ArgumentNullException(nameof(_requestsApiClient.Configuration.AccessToken)); }
 
             // Make the request to the MockAPI.
             var responseInstance = await _requestsApiClient.RequestRequestIdAsync(requestID);
@@ -129,9 +131,9 @@ namespace UberClient.Services
             // Write an InternalAPI model back
             return new RideModel()
             {
-                RideId = estimateCacheId,
+                RideId = internalServiceID,
                 EstimatedTimeOfArrival = Google.Protobuf.WellKnownTypes.Timestamp.FromDateTime((DateTime.UtcNow.AddSeconds(responseInstance.Pickup.Eta)).ToUniversalTime()),
-                RideStage = getStageFromStatus(responseInstance.Status),
+                RideStage = Utility.getStageFromStatus(responseInstance.Status),
                 RiderOnBoard = false,
                 Price = new CurrencyModel
                 {
@@ -162,17 +164,18 @@ namespace UberClient.Services
             if (SessionToken is null) { throw new ArgumentNullException(nameof(SessionToken)); }
 
             // RideID used as the cache-instance key
-            var estimateCacheId = request.RideId.ToString();
-            if (estimateCacheId is null) { throw new ArgumentNullException(nameof(estimateCacheId)); }
+            var internalServiceID = request.RideId.ToString();
+            if (internalServiceID is null) { throw new ArgumentNullException(nameof(internalServiceID)); }
 
             // Get the cache-instance for the ride-request
-            var cacheEstimate = await _cache.GetAsync<EstimateCache> (estimateCacheId);
+            var cacheEstimate = await _cache.GetAsync<EstimateCache> (internalServiceID);
             if (cacheEstimate is null) { throw new ArgumentNullException(nameof(cacheEstimate)); }
             var serviceID = cacheEstimate.ProductId.ToString();
             var requestID = cacheEstimate.RequestId.ToString();
 
             // Retrieve the user-access-token from IdentityService for the current user.
-            _requestsApiClient.Configuration = new Configuration { AccessToken = await _accessTokenService.GetAccessTokenAsync(SessionToken!, serviceID) };
+            _requestsApiClient.Configuration = new Configuration { AccessToken = await _tokenService.GetAccessTokenAsync(SessionToken!, serviceID) };
+            if (_requestsApiClient.Configuration.AccessToken is null) { throw new ArgumentNullException(nameof(_requestsApiClient.Configuration.AccessToken)); }
 
             // Make the Delete request to the MockAPI
             await _requestsApiClient.DeleteRequestsAsync(requestID);
@@ -180,18 +183,6 @@ namespace UberClient.Services
             // Return the cancellation-fee price breakdown saved in the cache.
             if(cacheEstimate.CancellationCost is null) { throw new ArgumentNullException(nameof(cacheEstimate.CancellationCost)); }
             return cacheEstimate.CancellationCost;
-        }
-
-        private Stage getStageFromStatus(string status)
-        {
-            return status switch
-            {
-                "processing" => Stage.Pending,
-                "accepted" => Stage.Accepted,
-                "no drivers available" => Stage.Cancelled,
-                "completed" => Stage.Completed,
-                _ => Stage.Unknown,
-            };
         }
     }
 }
