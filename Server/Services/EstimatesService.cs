@@ -40,6 +40,7 @@ namespace UberClient.Services
             var SessionToken = "" + _httpContextAccessor.HttpContext!.Request.Headers["token"]; // Extract the JWT token from the request-headers for the UserAccessToken requests.
             var servicesList = request.Services.ToList(); // List of service GUIDS. 
 
+            // Create the config-options for the redis-cache.
             DistributedCacheEntryOptions options = new() { AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(24) , SlidingExpiration = TimeSpan.FromHours(5) };
 
             // Loop through the list of service-IDs recieved within the request & make an estimate-request to the MockAPI for each appropriaate service ID
@@ -48,6 +49,7 @@ namespace UberClient.Services
                 ServiceLinker.ServiceIDs.TryGetValue(service, out string? serviceName); // Extract the service-name from the ServiceLinker Dictionary.
                 if (serviceName is null) continue; // Skip the current loop-iteration if there is no valid service-name matching the service-ID
 
+                // Retrieve the user-access-token from IdentityService for the current-user.
                 _requestsApiClient.Configuration = new Configuration { AccessToken = await _accessTokenService.GetAccessTokenAsync(SessionToken, service.ToString()) };
 
                 // Create a new instance of (RequestsEstimateRequest) to be sent to the MockAPI.
@@ -68,6 +70,7 @@ namespace UberClient.Services
                 if(estimateResponse is null) { throw new ArgumentNullException($"[UberClient::EstimatesService::GetEstimates] {nameof(estimateResponse)}"); }
                 var estimateResponseId = ServiceID.CreateServiceID(service).ToString(); // Extract the EstimateID from the response.
 
+                // Retrieve the user-access-token from IdentityService for the current-user.
                 _productsApiClient.Configuration = new Configuration { AccessToken = await _accessTokenService.GetAccessTokenAsync(SessionToken, service) };
 
                 // Make a Product request to the MockAPI
@@ -97,9 +100,15 @@ namespace UberClient.Services
                 {
                     EstimateInfo = estimateResponse,
                     GetEstimatesRequest = request,
-                    ProductId = Guid.Parse(estimateResponseId)
+                    ProductId = Guid.Parse(estimateResponseId),
+                    CancellationCost = new CurrencyModel
+                    {
+                        Currency = "USD",
+                        Price = product.PriceDetails.CancellationFee
+                    }
                 };
 
+                // Add the currrent Estimate instance to the redis-cache & return the data to EstimatesAPI.
                 await _cache.SetAsync(estimateResponseId, cacheInstance, options);
                 await responseStream.WriteAsync(estimateModel);
                 await Task.Delay(TimeSpan.FromSeconds(1));
@@ -117,7 +126,9 @@ namespace UberClient.Services
             var estimateInstance = estimateCache!.GetEstimatesRequest;
             var serviceID = estimateCache.ProductId.ToString();
 
+            // Create the config-options for the redis-cache.
             DistributedCacheEntryOptions options = new() { AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(24), SlidingExpiration = TimeSpan.FromHours(5) };
+            // Retrieve the user-access-token from IdentityService for the current user.
             _requestsApiClient.Configuration = new Configuration { AccessToken = await _accessTokenService.GetAccessTokenAsync(SessionToken, serviceID) };
 
             // Create a new (RequestEstimateRquest) instance to be sent to the MockAPI
@@ -139,6 +150,7 @@ namespace UberClient.Services
             var estimateResponseId = ServiceID.CreateServiceID(serviceID).ToString();
             estimateResponse.FareId = Guid.NewGuid().ToString();
 
+            // Retrieve the user-access-token from IdentityService for the current user.
             _productsApiClient.Configuration = new Configuration { AccessToken = await _accessTokenService.GetAccessTokenAsync(SessionToken, serviceID) };
 
             // Make a Product request to the MockAPI
@@ -171,6 +183,7 @@ namespace UberClient.Services
                 ProductId = Guid.Parse(serviceID)
             };
 
+            // Add EstimateCache to the cache storage & return the estimate model to EstimatesAPI.
             await _cache.SetAsync(estimateResponseId, cacheInstance, options);
             return estimateModel;
         }

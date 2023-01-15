@@ -6,7 +6,6 @@ using UberClient.Extensions;
 using UberClient.Interface;
 
 using RequestsApi = UberAPI.Client.Api.RequestsApi;
-using ProductsApi = UberAPI.Client.Api.ProductsApi;
 using Configuration = UberAPI.Client.Client.Configuration;
 using RideRequest = UberAPI.Client.Model.CreateRequests;
 
@@ -20,7 +19,6 @@ namespace UberClient.Services
         private readonly IHttpContextAccessor _httpContextAccessor;
 
         private readonly RequestsApi _requestsApiClient;
-        private readonly ProductsApi _productsApiClient;
 
         public RequestsService(ILogger<RequestsService> logger, IDistributedCache cache, IAccessTokenService accessTokenService, IHttpContextAccessor httpContextAccessor)
         {
@@ -30,7 +28,6 @@ namespace UberClient.Services
             _cache = cache;
 
             _requestsApiClient = new RequestsApi();
-            _productsApiClient = new ProductsApi();
         }
 
         public override async Task<RideModel> PostRideRequest(PostRideRequestModel request, ServerCallContext context)
@@ -44,7 +41,9 @@ namespace UberClient.Services
             if (cacheEstimate is null) { throw new ArgumentNullException($"[UberClient::RequestService::PostRideRequest] {nameof(cacheEstimate)}"); }
             var serviceID = cacheEstimate!.ProductId.ToString();
 
-            DistributedCacheEntryOptions options = new DistributedCacheEntryOptions() { AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(24)};
+            // Create the RedisCacheEntry configuration options.
+            var redisOptions = new DistributedCacheEntryOptions() { AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(24)};
+            // Retrieve the user-access token from IdentityService for the current user.
             _requestsApiClient.Configuration = new Configuration { AccessToken = await _accessTokenService.GetAccessTokenAsync(SessionToken, serviceID), };
 
             // Create a new instance of RideRequest to send to the MockAPI.
@@ -67,7 +66,7 @@ namespace UberClient.Services
 
             // Add the new Request ID to the Estimate instance & reinsert it back into the cache.
             cacheEstimate.RequestId = Guid.Parse(responseInstance._RequestId);
-            await _cache.SetAsync(estimateId, cacheEstimate, options);
+            await _cache.SetAsync(estimateId, cacheEstimate, redisOptions);
 
             // Create a new RideModel instance with the data we recieved to send it back to the RequestsAPI.
             return new RideModel()
@@ -101,19 +100,24 @@ namespace UberClient.Services
 
         public override async Task<RideModel> GetRideRequest(GetRideRequestModel request, ServerCallContext context)
         {
-            var SessionToken = "" + _httpContextAccessor.HttpContext!.Request.Headers["token"];
+            // Extract JWT token from the requst headers.
+            string SessionToken = "" + _httpContextAccessor.HttpContext!.Request.Headers["token"];
             if(SessionToken is null) { throw new ArgumentNullException(nameof(SessionToken)); }
 
-            var estimateCacheId = request.RideId.ToString();
+            // RideID used as the cache-instance key.
+            string estimateCacheId = request.RideId.ToString();
+            if(estimateCacheId is null) { throw new ArgumentNullException(nameof(estimateCacheId)); }
+
+            // Get the cache instance for the ride-request.
             var cacheEstimate = await _cache.GetAsync<EstimateCache>(estimateCacheId);
             if (cacheEstimate is null) { throw new ArgumentNullException(nameof(cacheEstimate)); }
             string serviceID = cacheEstimate.ProductId.ToString();
             string requestID = cacheEstimate.RequestId.ToString();
 
-            _logger.LogInformation($"[UberClient::RequestService::GetRideRequest] RequestID: {requestID}");
-
+            // Retrieve the user-access-token from IdentityService for the current user.
             _requestsApiClient.Configuration = new Configuration { AccessToken = await _accessTokenService.GetAccessTokenAsync(SessionToken, serviceID) };
 
+            // Make the request to the MockAPI.
             var responseInstance = await _requestsApiClient.RequestRequestIdAsync(requestID);
             if (responseInstance is null) { throw new ArgumentNullException(nameof(responseInstance)); }
 
@@ -148,27 +152,29 @@ namespace UberClient.Services
         }
         public override async Task<CurrencyModel> DeleteRideRequest(DeleteRideRequestModel request, ServerCallContext context)
         {
+            // Extract the JWT token from the request headers.
             var SessionToken = "" + _httpContextAccessor.HttpContext!.Request.Headers["token"];
             if (SessionToken is null) { throw new ArgumentNullException(nameof(SessionToken)); }
 
+            // RideID used as the cache-instance key
             var estimateCacheId = request.RideId.ToString();
+            if (estimateCacheId is null) { throw new ArgumentNullException(nameof(estimateCacheId)); }
+
+            // Get the cache-instance for the ride-request
             var cacheEstimate = await _cache.GetAsync<EstimateCache> (estimateCacheId);
             if (cacheEstimate is null) { throw new ArgumentNullException(nameof(cacheEstimate)); }
             var serviceID = cacheEstimate.ProductId.ToString();
             var requestID = cacheEstimate.RequestId.ToString();
 
+            // Retrieve the user-access-token from IdentityService for the current user.
             _requestsApiClient.Configuration = new Configuration { AccessToken = await _accessTokenService.GetAccessTokenAsync(SessionToken!, serviceID) };
 
+            // Make the Delete request to the MockAPI
             await _requestsApiClient.DeleteRequestsAsync(requestID);
 
-            var product = await _productsApiClient.ProductProductIdAsync(serviceID);
-            if(product is null) { throw new ArgumentNullException(nameof(product)); }
-
-            return new CurrencyModel
-            {
-                Price = (double)product.PriceDetails.CancellationFee,
-                Currency = product.PriceDetails.CurrencyCode
-            };
+            // Return the cancellation-fee price breakdown saved in the cache.
+            if(cacheEstimate.CancellationCost is null) { throw new ArgumentNullException(nameof(cacheEstimate.CancellationCost)); }
+            return cacheEstimate.CancellationCost;
         }
 
         private Stage getStageFromStatus(string status)
