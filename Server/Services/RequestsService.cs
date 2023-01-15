@@ -67,12 +67,12 @@ namespace UberClient.Services
 
             // Add the new Request ID to the Estimate instance & reinsert it back into the cache.
             cacheEstimate.RequestId = Guid.Parse(responseInstance._RequestId);
-            await _cache.SetAsync(request.EstimateId, cacheEstimate, options);
+            await _cache.SetAsync(estimateId, cacheEstimate, options);
 
             // Create a new RideModel instance with the data we recieved to send it back to the RequestsAPI.
             return new RideModel()
             {
-                RideId = request.EstimateId.ToString(),
+                RideId = estimateId,
                 EstimatedTimeOfArrival = Google.Protobuf.WellKnownTypes.Timestamp.FromDateTime((DateTime.Now.AddSeconds(responseInstance.Pickup.Eta)).ToUniversalTime()),
                 RideStage = getStageFromStatus(responseInstance.Status),
                 RiderOnBoard = false,
@@ -81,7 +81,7 @@ namespace UberClient.Services
                     DisplayName = responseInstance.Drivers.Name,
                     LicensePlate = responseInstance.Vehicle.LicensePlate,
                     CarPicture = responseInstance.Vehicle.PictureUrl,
-                    CarDescription = "RideShare Vehicle",
+                    CarDescription = $"{ responseInstance.Vehicle.Make } { responseInstance.Vehicle.Model }",
                     DriverPronounciation = responseInstance.Drivers.Name
                 },
                 DriverLocation = new LocationModel()
@@ -102,24 +102,17 @@ namespace UberClient.Services
         public override async Task<RideModel> GetRideRequest(GetRideRequestModel request, ServerCallContext context)
         {
             var SessionToken = "" + _httpContextAccessor.HttpContext!.Request.Headers["token"];
+            if(SessionToken is null) { throw new ArgumentNullException(nameof(SessionToken)); }
+
             var estimateCacheId = request.RideId.ToString();
-
-            _logger.LogInformation($"[UberClient::RequestsService::GetRideRequest] HTTP Context session token: {SessionToken}");
-
             var cacheEstimate = await _cache.GetAsync<EstimateCache>(estimateCacheId);
+            if (cacheEstimate is null) { throw new ArgumentNullException(nameof(cacheEstimate)); }
             var serviceID = cacheEstimate!.ProductId.ToString();
-
-            if (cacheEstimate is null) { _logger.LogError("[UberClient::RequestsService::GetRideRequest] Cache Estimate is NULL"); }
 
             _requestsApiClient.Configuration = new Configuration { AccessToken = await _accessTokenService.GetAccessTokenAsync(SessionToken!, serviceID) };
 
-            _logger.LogInformation($"[UberClient::RequestsService::GetRideRequest] Sending (estimateID) to MockAPI... \n{estimateCacheId}");
-
             var responseInstance = await _requestsApiClient.RequestRequestIdAsync(estimateCacheId);
-
-            if (responseInstance is null) { _logger.LogError("[UberClient::RequestsService::GetRideRequest] RequestId is NULL"); }
-
-            _logger.LogInformation($"[UberClient::RequestsService::GetRideRequest] Receiving (RequestId) from MockAPI... \n{responseInstance}");
+            if (responseInstance is null) { throw new ArgumentNullException(nameof(responseInstance)); }
 
             // Write an InternalAPI model back
             return new RideModel()
@@ -144,25 +137,28 @@ namespace UberClient.Services
                 DriverLocation = new LocationModel
                 {
                     Latitude = responseInstance.Location.Latitude,
-                    Longitude = responseInstance.Location.Longitude
+                    Longitude = responseInstance.Location.Longitude,
+                    Height = 0f,
+                    Planet = "Earth"
                 },
             };
         }
         public override async Task<CurrencyModel> DeleteRideRequest(DeleteRideRequestModel request, ServerCallContext context)
         {
             var SessionToken = "" + _httpContextAccessor.HttpContext!.Request.Headers["token"];
-
-            _logger.LogInformation($"[UberClient::RequestsService::DeleteRideRequest] HTTP Context session token: {SessionToken}");
+            if (SessionToken is null) { throw new ArgumentNullException(nameof(SessionToken)); }
 
             var cacheEstimate = await _cache.GetAsync<EstimateCache> (request.RideId);
-            string accessToken = await _accessTokenService.GetAccessTokenAsync(SessionToken, cacheEstimate.ProductId.ToString());
+            if (cacheEstimate is null) { throw new ArgumentNullException(nameof(cacheEstimate)); }
+            var serviceID = cacheEstimate.ProductId.ToString();
+            var requestID = cacheEstimate.RequestId.ToString();
 
-            _requestsApiClient.Configuration = new Configuration { AccessToken = accessToken, };
+            _requestsApiClient.Configuration = new Configuration { AccessToken = await _accessTokenService.GetAccessTokenAsync(SessionToken!, serviceID) };
 
-            await _requestsApiClient.DeleteRequestsAsync(cacheEstimate.RequestId.ToString());
-            _productsApiClient.Configuration = new Configuration { AccessToken = accessToken, };
+            await _requestsApiClient.DeleteRequestsAsync(requestID);
 
-            var product = await _productsApiClient.ProductProductIdAsync(cacheEstimate.ProductId.ToString());
+            var product = await _productsApiClient.ProductProductIdAsync(serviceID);
+            if(product is null) { throw new ArgumentNullException(nameof(product)); }
 
             return new CurrencyModel
             {
@@ -173,14 +169,14 @@ namespace UberClient.Services
 
         private Stage getStageFromStatus(string status)
         {
-            switch (status)
+            return status switch
             {
-                case "processing": return Stage.Pending;
-                case "accepted": return Stage.Accepted;
-                case "no drivers available": return Stage.Cancelled;
-                case "completed": return Stage.Completed;
-                default: return Stage.Unknown;
-            }
+                "processing" => Stage.Pending,
+                "accepted" => Stage.Accepted,
+                "no drivers available" => Stage.Cancelled,
+                "completed" => Stage.Completed,
+                _ => Stage.Unknown,
+            };
         }
     }
 }
