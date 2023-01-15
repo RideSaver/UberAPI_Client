@@ -79,8 +79,7 @@ builder.Services.AddGrpcClient<Users.UsersClient>(o =>
 
 builder.Services.Configure<ListenOptions>(options =>
 {
-    //options.UseHttps(new X509Certificate2(Path.Combine("/certs/tls.crt"), Path.Combine("/certs/tls.key")));
-    options.UseHttps(new X509Certificate2(Path.Combine("/certs/certificate.pfx"), string.Empty));
+    options.UseHttps(new X509Certificate2(Path.Combine("/certs/tls.crt"), Path.Combine("/certs/tls.key")));
 });
 
 var app = builder.Build();
