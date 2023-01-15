@@ -8,7 +8,6 @@ using UberClient.Interface;
 using RequestsApi = UberAPI.Client.Api.RequestsApi;
 using ProductsApi = UberAPI.Client.Api.ProductsApi;
 using Configuration = UberAPI.Client.Client.Configuration;
-using RequestId = UberAPI.Client.Model.RequestId;
 using RideRequest = UberAPI.Client.Model.CreateRequests;
 
 namespace UberClient.Services
@@ -41,28 +40,29 @@ namespace UberClient.Services
             var cacheEstimate = await _cache.GetAsync<EstimateCache>(estimateId);
             var serviceID = cacheEstimate!.ProductId.ToString();
 
+            if (cacheEstimate is null) { throw new ArgumentNullException($"[UberClient::RequestService::PostRideRequest] {nameof(cacheEstimate)}"); }
+
             DistributedCacheEntryOptions options = new DistributedCacheEntryOptions() { AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(24)};
             _requestsApiClient.Configuration = new Configuration { AccessToken = await _accessTokenService.GetAccessTokenAsync(SessionToken, serviceID), };
 
-            var requestInstance = new RideRequest(fareId: Guid.NewGuid().ToString(), productId: cacheEstimate.ProductId.ToString(),
-                startLatitude: (float)cacheEstimate.GetEstimatesRequest!.StartPoint.Latitude,
-                startLongitude: (float)cacheEstimate.GetEstimatesRequest.StartPoint.Longitude,
-                endLatitude: (float)cacheEstimate.GetEstimatesRequest.EndPoint.Latitude,
-                endLongitude: (float)cacheEstimate.GetEstimatesRequest.EndPoint.Longitude)
-                {
+            RideRequest requestInstance = new(
+            fareId: Guid.NewGuid().ToString(),
+            productId: cacheEstimate.ProductId.ToString(),
+            startLatitude: (float)cacheEstimate.GetEstimatesRequest!.StartPoint.Latitude,
+            startLongitude: (float)cacheEstimate.GetEstimatesRequest.StartPoint.Longitude,
+            endLatitude: (float)cacheEstimate.GetEstimatesRequest.EndPoint.Latitude,
+            endLongitude: (float)cacheEstimate.GetEstimatesRequest.EndPoint.Longitude)
+            {
                 SurgeConfirmationId = Guid.NewGuid().ToString(),
                 PaymentMethodId = Guid.NewGuid().ToString(),
                 Seats = cacheEstimate.GetEstimatesRequest.Seats
-                };
-
-            _logger.LogInformation($"CreateRequest JSON: {requestInstance.ToJson()}");
+            };
 
             var responseInstance = await _requestsApiClient.CreateRequestsAsync(requestInstance);
 
-            // ADD REQUEST ID TO CACHE //
+            if (responseInstance is null) { throw new ArgumentNullException($"[UberClient::RequestService::PostRideRequest] {nameof(responseInstance)}"); }
 
-            if (responseInstance is null) { _logger.LogError("[UberClient::RequestService::PostRideRequest] RequestId is null!"); }
-
+            cacheEstimate.RequestId = Guid.Parse(responseInstance._RequestId);
             await _cache.SetAsync(request.EstimateId, cacheEstimate, options);
 
             return new RideModel()
@@ -88,8 +88,8 @@ namespace UberClient.Services
                 },
                 Price = new CurrencyModel
                 {
-                    Price = (double)cacheEstimate.EstimateInfo.Price,
-                    Currency = cacheEstimate.EstimateInfo.Currency
+                    Price = (double)cacheEstimate.EstimateInfo!.Price,
+                    Currency = cacheEstimate.EstimateInfo!.Currency
                 }
             };
         }
