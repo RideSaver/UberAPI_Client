@@ -13,12 +13,12 @@ namespace UberClient.Services
 {
     public class RequestsService : Requests.RequestsBase
     {
-        private readonly ILogger<RequestsService> _logger;
         private readonly IDistributedCache _cache;
         private readonly IAccessTokenService _accessTokenService;
         private readonly IHttpContextAccessor _httpContextAccessor;
 
         private readonly RequestsApi _requestsApiClient;
+        private readonly ILogger<RequestsService> _logger;
 
         public RequestsService(ILogger<RequestsService> logger, IDistributedCache cache, IAccessTokenService accessTokenService, IHttpContextAccessor httpContextAccessor)
         {
@@ -34,15 +34,20 @@ namespace UberClient.Services
         {
             // Extract the JWT Token from the request-headers to be used for the UserAccessToken
             var SessionToken = "" + _httpContextAccessor.HttpContext!.Request.Headers["token"];
+            if (SessionToken is null) { throw new ArgumentNullException(nameof(SessionToken)); }
+
+            // Get the EstimateID used as key to for the EstimateInstance stored in the cache.
             var estimateId = request.EstimateId.ToString();
+            if (estimateId is null) { throw new ArgumentNullException(nameof(estimateId)); }
 
             // Retrieve the Estimate instance from the cache for the EstimateID 
             var cacheEstimate = await _cache.GetAsync<EstimateCache>(estimateId);
-            if (cacheEstimate is null) { throw new ArgumentNullException($"[UberClient::RequestService::PostRideRequest] {nameof(cacheEstimate)}"); }
+            if (cacheEstimate is null) { throw new ArgumentNullException(nameof(cacheEstimate)); }
             var serviceID = cacheEstimate!.ProductId.ToString();
 
             // Create the RedisCacheEntry configuration options.
             var redisOptions = new DistributedCacheEntryOptions() { AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(24)};
+
             // Retrieve the user-access token from IdentityService for the current user.
             _requestsApiClient.Configuration = new Configuration { AccessToken = await _accessTokenService.GetAccessTokenAsync(SessionToken, serviceID), };
 
@@ -62,7 +67,7 @@ namespace UberClient.Services
 
             // Make the request to the MockAPI to recieve back the RequestID instance.
             var responseInstance = await _requestsApiClient.CreateRequestsAsync(requestInstance);
-            if (responseInstance is null) { throw new ArgumentNullException($"[UberClient::RequestService::PostRideRequest] {nameof(responseInstance)}"); }
+            if (responseInstance is null) { throw new ArgumentNullException(nameof(responseInstance)); }
 
             // Add the new Request ID to the Estimate instance & reinsert it back into the cache.
             cacheEstimate.RequestId = Guid.Parse(responseInstance._RequestId);
@@ -87,7 +92,7 @@ namespace UberClient.Services
                 {
                     Latitude = responseInstance.Location.Latitude,
                     Longitude = responseInstance.Location.Longitude,
-                    Height = 0f,
+                    Height = 300f,
                     Planet = "Earth"
                 },
                 Price = new CurrencyModel
@@ -145,7 +150,7 @@ namespace UberClient.Services
                 {
                     Latitude = responseInstance.Location.Latitude,
                     Longitude = responseInstance.Location.Longitude,
-                    Height = 0f,
+                    Height = 300f,
                     Planet = "Earth"
                 },
             };

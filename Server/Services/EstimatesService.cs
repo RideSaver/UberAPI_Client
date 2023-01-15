@@ -16,13 +16,13 @@ namespace UberClient.Services
     // Summary: Handles all the ride-estimates related operations
     public class EstimatesService : Estimates.EstimatesBase
     {
-        private readonly ILogger<EstimatesService> _logger;
         private readonly IDistributedCache _cache;
         private readonly IAccessTokenService _accessTokenService;
         private readonly IHttpContextAccessor _httpContextAccessor;
 
         private readonly RequestsApi _requestsApiClient;
         private readonly ProductsApi _productsApiClient;
+        private readonly ILogger<EstimatesService> _logger;
 
         public EstimatesService(ILogger<EstimatesService> logger, IDistributedCache cache, IAccessTokenService accessTokenService, IHttpContextAccessor httpContextAccessor)
         {
@@ -118,16 +118,24 @@ namespace UberClient.Services
         public override async Task<EstimateModel> GetEstimateRefresh(GetEstimateRefreshRequest request, ServerCallContext context)
         {
             string clientId = "al0I63Gjwk3Wsmhq_EL8_HxB8qWlO7yY";
+
+            // Extract the JWT token from the request headers.
             var SessionToken = "" + _httpContextAccessor.HttpContext!.Request.Headers["token"];
+            if(SessionToken is null) { throw new ArgumentNullException(nameof(SessionToken)); }
+
+            // Get the EstimateID used as key for the estimate stored in cache.
+            var estimateID = request.EstimateId.ToString();
+            if(estimateID is null) { throw new ArgumentNullException(nameof(estimateID)); }
 
             // Extract the Estimate instance from the redis Cache.
-            EstimateCache? estimateCache = await _cache.GetAsync<EstimateCache>(request.EstimateId.ToString());
+            var estimateCache = await _cache.GetAsync<EstimateCache>(estimateID);
             if (estimateCache is null) { throw new ArgumentNullException($"[UberClient::EstimatesService::GetEstimateRefresh] {nameof(estimateCache)}"); }
             var estimateInstance = estimateCache!.GetEstimatesRequest;
             var serviceID = estimateCache.ProductId.ToString();
 
             // Create the config-options for the redis-cache.
             DistributedCacheEntryOptions options = new() { AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(24), SlidingExpiration = TimeSpan.FromHours(5) };
+
             // Retrieve the user-access-token from IdentityService for the current user.
             _requestsApiClient.Configuration = new Configuration { AccessToken = await _accessTokenService.GetAccessTokenAsync(SessionToken, serviceID) };
 
@@ -147,7 +155,6 @@ namespace UberClient.Services
             // Make an Estimate request to the MockAPI.
             var estimateResponse = EstimateInfo.FromEstimateResponse(await _requestsApiClient.RequestsEstimateAsync(requestInstance));
             if (estimateResponse is null) { throw new ArgumentNullException($"[UberClient::EstimatesService::GetEstimates] {nameof(estimateResponse)}"); }
-            var estimateResponseId = ServiceID.CreateServiceID(serviceID).ToString();
             estimateResponse.FareId = Guid.NewGuid().ToString();
 
             // Retrieve the user-access-token from IdentityService for the current user.
@@ -160,7 +167,7 @@ namespace UberClient.Services
             // Create an EstimateModel to be sent back to the EstimatesAPI.
             var estimateModel = new EstimateModel()
             {
-                EstimateId = estimateResponseId,
+                EstimateId = estimateID,
                 CreatedTime = Google.Protobuf.WellKnownTypes.Timestamp.FromDateTime(DateTime.Now.ToUniversalTime()),
                 InvalidTime = Google.Protobuf.WellKnownTypes.Timestamp.FromDateTime(DateTime.Now.AddMinutes(5).ToUniversalTime()),
                 Distance = estimateResponse.Distance,
@@ -180,11 +187,16 @@ namespace UberClient.Services
             {
                 EstimateInfo = estimateResponse,
                 GetEstimatesRequest = estimateInstance,
-                ProductId = Guid.Parse(serviceID)
+                ProductId = Guid.Parse(serviceID),
+                CancellationCost = new CurrencyModel
+                {
+                    Currency = product.PriceDetails.CurrencyCode,
+                    Price = product.PriceDetails.CancellationFee
+                }
             };
 
             // Add EstimateCache to the cache storage & return the estimate model to EstimatesAPI.
-            await _cache.SetAsync(estimateResponseId, cacheInstance, options);
+            await _cache.SetAsync(estimateID, cacheInstance, options);
             return estimateModel;
         }
     }
